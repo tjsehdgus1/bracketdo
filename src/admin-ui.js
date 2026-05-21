@@ -1,7 +1,8 @@
 // src/admin-ui.js
 import { getState, getActiveDivision, updateState, EMPTY_DIVISION } from './state.js';
 import { renderBracketSVG } from './svg-bracket.js';
-import { generateBracket, generateTeamBracket } from './bracket-engine.js';
+import { generateBracket, generateTeamBracket, generateEmptyBracket } from './bracket-engine.js';
+import { createGhost, moveGhost, removeGhost } from './drag-ghost.js';
 
 function escHtml(str) {
   return String(str)
@@ -9,6 +10,52 @@ function escHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+// --- 드래그 공유 상태 ---
+let _bracketDragSource = null; // { matchId, slot: 0|1 }
+let _rosterDragSource  = null; // { id, label }
+let _hoveredOverlay    = null; // 현재 강조 중인 SVG overlay 요소
+
+function getParticipantLabel(id, div) {
+  if (!id || id === 'bye') return id === 'bye' ? 'BYE' : '—';
+  if (div.type === 'individual') {
+    const p = div.players.find(p => p.id === id);
+    return p ? `${p.name}${p.club ? ' (' + p.club + ')' : ''}` : '?';
+  }
+  return div.teams.find(t => t.id === id)?.name ?? '?';
+}
+
+function getPlacedParticipantIds(div) {
+  const ids = new Set();
+  if (!div.bracket?.rounds) return ids;
+  const k1 = div.type === 'team' ? 'team1' : 'player1';
+  const k2 = div.type === 'team' ? 'team2' : 'player2';
+  div.bracket.rounds.flatMap(r => r.matches).forEach(m => {
+    if (m[k1] && m[k1] !== 'bye') ids.add(m[k1]);
+    if (m[k2] && m[k2] !== 'bye') ids.add(m[k2]);
+  });
+  return ids;
+}
+
+function highlightOverlay(el) {
+  if (_hoveredOverlay === el) return;
+  clearOverlayHighlight();
+  if (!el) return;
+  _hoveredOverlay = el;
+  el.setAttribute('fill', 'rgba(59,130,246,0.18)');
+  el.setAttribute('stroke', '#3b82f6');
+  el.setAttribute('stroke-width', '2');
+  el.setAttribute('stroke-dasharray', '5,3');
+}
+
+function clearOverlayHighlight() {
+  if (!_hoveredOverlay) return;
+  _hoveredOverlay.setAttribute('fill', 'transparent');
+  _hoveredOverlay.removeAttribute('stroke');
+  _hoveredOverlay.removeAttribute('stroke-width');
+  _hoveredOverlay.removeAttribute('stroke-dasharray');
+  _hoveredOverlay = null;
 }
 
 export function initAdmin() {
@@ -221,67 +268,119 @@ function renderBracketArea(state) {
 }
 
 function setupBracketDragDrop(container, division) {
-  // HTML5 DnD API는 SVG 요소를 지원하지 않으므로 Pointer Events API 사용
-  let dragSource = null; // { matchId, slot: 0 | 1 }
-
   container.querySelectorAll('[data-match-id]').forEach(el => {
     el.style.cursor = 'grab';
     el.addEventListener('pointerdown', e => {
       const rect = el.getBoundingClientRect();
       const slot = e.clientY < rect.top + rect.height / 2 ? 0 : 1;
-      dragSource = { matchId: el.dataset.matchId, slot };
+      const k1 = division.type === 'team' ? 'team1' : 'player1';
+      const k2 = division.type === 'team' ? 'team2' : 'player2';
+      const allMatches = division.bracket.rounds.flatMap(r => r.matches);
+      const match = allMatches.find(m => m.id === el.dataset.matchId);
+      const participantId = match?.[slot === 0 ? k1 : k2];
+      const label = participantId ? getParticipantLabel(participantId, division) : '—';
+
+      _bracketDragSource = { matchId: el.dataset.matchId, slot };
+      createGhost(label);
+      moveGhost(e.clientX, e.clientY);
       e.preventDefault();
     });
   });
 
-  // 이전 리스너 제거 후 재등록 (renderAll 반복 호출 시 누적 방지)
+  // container-level pointerup/pointercancel 제거 (document-level로 통합)
   if (container._bracketPointerUp) {
     container.removeEventListener('pointerup', container._bracketPointerUp);
+    container._bracketPointerUp = null;
   }
-  const onPointerUp = e => {
-    if (!dragSource) return;
-    const src = dragSource;
-    dragSource = null;
-
-    const hits = document.elementsFromPoint(e.clientX, e.clientY);
-    const targetEl = hits.find(el => el.dataset && el.dataset.matchId);
-    if (!targetEl) return;
-
-    const targetMatchId = targetEl.dataset.matchId;
-    const rect = targetEl.getBoundingClientRect();
-    const targetSlot = e.clientY < rect.top + rect.height / 2 ? 0 : 1;
-
-    if (src.matchId === targetMatchId && src.slot === targetSlot) return;
-
-    updateState(s => {
-      const div = s.divisions[s.activeDivision];
-      const allMatches = div.bracket.rounds.flatMap(r => r.matches);
-      const srcMatch = allMatches.find(m => m.id === src.matchId);
-      const tgtMatch = allMatches.find(m => m.id === targetMatchId);
-      if (!srcMatch || !tgtMatch) return;
-      if (srcMatch.type !== tgtMatch.type) return;
-
-      const isTeam = srcMatch.type === 'team';
-      const slots = isTeam ? ['team1', 'team2'] : ['player1', 'player2'];
-      const srcKey = slots[src.slot];
-      const tgtKey = slots[targetSlot];
-
-      [srcMatch[srcKey], tgtMatch[tgtKey]] = [tgtMatch[tgtKey], srcMatch[srcKey]];
-    });
-  };
-  container._bracketPointerUp = onPointerUp;
-  container.addEventListener('pointerup', onPointerUp);
-
   if (container._bracketPointerCancel) {
     container.removeEventListener('pointercancel', container._bracketPointerCancel);
+    container._bracketPointerCancel = null;
   }
-  const onPointerCancel = () => { dragSource = null; };
-  container._bracketPointerCancel = onPointerCancel;
-  container.addEventListener('pointercancel', onPointerCancel);
 }
 
 function bindAdminEvents() {
   const root = document;
+
+  // --- 전역 포인터 이벤트 (ghost 이동 + 드롭 처리) ---
+  document.addEventListener('pointermove', e => {
+    if (!_bracketDragSource && !_rosterDragSource) return;
+    moveGhost(e.clientX, e.clientY);
+    // 드롭 가능 오버레이 강조
+    const hits = document.elementsFromPoint(e.clientX, e.clientY);
+    const overlay = hits.find(el => el.dataset?.matchId) ?? null;
+    highlightOverlay(overlay);
+  });
+
+  document.addEventListener('pointerup', e => {
+    const hadBracket = !!_bracketDragSource;
+    const hadRoster  = !!_rosterDragSource;
+
+    if (hadBracket) {
+      const src = _bracketDragSource;
+      _bracketDragSource = null;
+
+      const hits = document.elementsFromPoint(e.clientX, e.clientY);
+      const targetEl = hits.find(el => el.dataset?.matchId);
+      if (targetEl) {
+        const targetMatchId = targetEl.dataset.matchId;
+        const rect = targetEl.getBoundingClientRect();
+        const targetSlot = e.clientY < rect.top + rect.height / 2 ? 0 : 1;
+        if (src.matchId !== targetMatchId || src.slot !== targetSlot) {
+          updateState(s => {
+            const div = s.divisions[s.activeDivision];
+            const allMatches = div.bracket.rounds.flatMap(r => r.matches);
+            const srcMatch = allMatches.find(m => m.id === src.matchId);
+            const tgtMatch = allMatches.find(m => m.id === targetMatchId);
+            if (!srcMatch || !tgtMatch) return;
+            if (srcMatch.type !== tgtMatch.type) return;
+            const isTeam = srcMatch.type === 'team';
+            const slots = isTeam ? ['team1', 'team2'] : ['player1', 'player2'];
+            const srcKey = slots[src.slot];
+            const tgtKey = slots[targetSlot];
+            [srcMatch[srcKey], tgtMatch[tgtKey]] = [tgtMatch[tgtKey], srcMatch[srcKey]];
+          });
+        }
+      }
+    }
+
+    if (hadRoster) {
+      const src = _rosterDragSource;
+      _rosterDragSource = null;
+
+      const hits = document.elementsFromPoint(e.clientX, e.clientY);
+      const targetEl = hits.find(el => el.dataset?.matchId);
+      if (targetEl) {
+        const matchId = targetEl.dataset.matchId;
+        const rect = targetEl.getBoundingClientRect();
+        const slot = e.clientY < rect.top + rect.height / 2 ? 0 : 1;
+        updateState(s => {
+          const div = s.divisions[s.activeDivision];
+          const allMatches = div.bracket.rounds.flatMap(r => r.matches);
+          const match = allMatches.find(m => m.id === matchId);
+          if (!match || match.status === 'done') return;
+          const key = div.type === 'team'
+            ? (slot === 0 ? 'team1' : 'team2')
+            : (slot === 0 ? 'player1' : 'player2');
+          // 슬롯이 비어 있거나 BYE일 때만 배치
+          if (match[key] && match[key] !== 'bye') return;
+          // 이미 다른 슬롯에 배치된 선수면 무시
+          const placed = getPlacedParticipantIds(div);
+          if (placed.has(src.id)) return;
+          match[key] = src.id;
+        });
+      }
+    }
+
+    removeGhost();
+    clearOverlayHighlight();
+  });
+
+  document.addEventListener('pointercancel', () => {
+    _bracketDragSource = null;
+    _rosterDragSource  = null;
+    removeGhost();
+    clearOverlayHighlight();
+  });
 
   // 대회명 입력
   root.addEventListener('change', e => {
