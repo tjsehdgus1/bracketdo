@@ -6,6 +6,7 @@
   --bg-dark:     #0d0d1a;
   --bg-panel:    #111827;
   --bg-card:     #1a1a2e;
+  --bg-active:   #1e3a5f;
   --border:      #1f2937;
   --border-blue: #3b6ca8;
   --accent-blue: #7eb8f7;
@@ -14,7 +15,6 @@
   --text-muted:  #6b7280;
   --text-dim:    #374151;
   --danger:      #ef4444;
-  --warning:     #f59e0b;
 }
 
 body {
@@ -34,7 +34,7 @@ button {
   font-size: 13px;
   font-family: inherit;
 }
-button:hover { background: #1e3a5f; }
+button:hover { background: var(--bg-active); }
 
 input[type="text"], input[type="number"] {
   background: var(--bg-card);
@@ -45,7 +45,7 @@ input[type="text"], input[type="number"] {
   font-size: 13px;
   font-family: inherit;
 }
-input:focus { outline: none; border-color: var(--accent-blue); }
+input[type="text"]:focus, input[type="number"]:focus { outline: none; border-color: var(--accent-blue); }
 
 .hidden { display: none !important; }
 
@@ -117,7 +117,7 @@ input:focus { outline: none; border-color: var(--accent-blue); }
   color: var(--text-muted);
 }
 .division-tab.active {
-  background: #1e3a5f;
+  background: var(--bg-active);
   border-color: var(--border-blue);
   color: var(--accent-blue);
 }
@@ -195,7 +195,7 @@ input:focus { outline: none; border-color: var(--accent-blue); }
 #display-controls { display: flex; align-items: center; gap: 8px; }
 #display-controls button { font-size: 12px; padding: 3px 10px; }
 #display-controls button.active {
-  background: #1e3a5f;
+  background: var(--bg-active);
   border-color: var(--accent-blue);
 }
 
@@ -316,7 +316,7 @@ input:focus { outline: none; border-color: var(--accent-blue); }
 .result-score-nums .sep { color: var(--text-dim); font-size: 20px; }
 
 /* SVG 브라켓 공통 스타일 */
-.bracket-svg text { font-family: 'Malgun Gothic', sans-serif; }
+.bracket-svg text { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
