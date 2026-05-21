@@ -3,6 +3,10 @@ import { getState, getActiveDivision, updateState } from './state.js';
 import { calcIndividualWinner, calcTeamBoutWinner, calcTeamMatchResult } from './scoring.js';
 import { advanceWinner } from './bracket-engine.js';
 
+function escHtml(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 export function openMatchModal(matchId) {
   const state = getState();
   const div = getActiveDivision();
@@ -40,13 +44,13 @@ function renderIndividualMatchModal(match, div) {
     <h3 style="margin-bottom:16px">경기 결과 입력</h3>
     <div style="display:flex;align-items:center;gap:16px;justify-content:center">
       <div style="text-align:center;flex:1">
-        <div style="font-size:18px;font-weight:bold;margin-bottom:8px">${p1Name}</div>
+        <div style="font-size:18px;font-weight:bold;margin-bottom:8px">${escHtml(p1Name)}</div>
         <input type="number" id="score1" value="${match.score1 ?? 0}" min="0" max="10"
           style="width:60px;text-align:center;font-size:20px;padding:8px">
       </div>
       <div style="font-size:24px;color:var(--text-muted)">:</div>
       <div style="text-align:center;flex:1">
-        <div style="font-size:18px;font-weight:bold;margin-bottom:8px">${p2Name}</div>
+        <div style="font-size:18px;font-weight:bold;margin-bottom:8px">${escHtml(p2Name)}</div>
         <input type="number" id="score2" value="${match.score2 ?? 0}" min="0" max="10"
           style="width:60px;text-align:center;font-size:20px;padding:8px">
       </div>
@@ -76,13 +80,13 @@ function renderTeamMatchModal(match, div) {
     return `
       <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
         <span style="width:32px;font-size:11px;color:var(--text-muted)">${pos}</span>
-        <span style="flex:1;font-size:13px">${p1?.name ?? '-'}</span>
+        <span style="flex:1;font-size:13px">${escHtml(p1?.name ?? '-')}</span>
         <input type="number" class="bout-score1" data-bout="${i}" value="${bout.score1}" min="0" max="10"
           style="width:48px;text-align:center;padding:4px">
         <span style="color:var(--text-muted)">:</span>
         <input type="number" class="bout-score2" data-bout="${i}" value="${bout.score2}" min="0" max="10"
           style="width:48px;text-align:center;padding:4px">
-        <span style="flex:1;font-size:13px;text-align:right">${p2?.name ?? '-'}</span>
+        <span style="flex:1;font-size:13px;text-align:right">${escHtml(p2?.name ?? '-')}</span>
       </div>
     `;
   }).join('');
@@ -90,7 +94,7 @@ function renderTeamMatchModal(match, div) {
   return `
     <h3 style="margin-bottom:4px">단체전 결과 입력</h3>
     <div style="display:flex;justify-content:space-between;margin-bottom:12px;color:var(--text-muted);font-size:13px">
-      <span>${t1.name}</span><span>${t2.name}</span>
+      <span>${escHtml(t1.name)}</span><span>${escHtml(t2.name)}</span>
     </div>
 
     <div style="margin-bottom:16px">
@@ -102,7 +106,7 @@ function renderTeamMatchModal(match, div) {
             style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:var(--bg-card);border:1px solid var(--border);border-radius:4px;cursor:grab">
             <span style="color:var(--text-muted);font-size:11px">⠿</span>
             <span style="color:var(--text-muted);font-size:10px;width:28px">${div.positions[i] ?? i+1}</span>
-            <span style="font-size:12px">${p?.name ?? pid}</span>
+            <span style="font-size:12px">${escHtml(p?.name ?? pid)}</span>
           </div>`;
         }).join('')}
       </div>
@@ -125,7 +129,7 @@ function bindModalEvents(matchId, matchType, div) {
 
   document.getElementById('modal-overlay')?.addEventListener('click', e => {
     if (e.target.id === 'modal-overlay') closeMatchModal();
-  });
+  }, { once: true });
 
   document.getElementById('btn-modal-confirm')?.addEventListener('click', () => {
     if (matchType === 'individual') saveIndividualResult(matchId);
@@ -139,22 +143,22 @@ function bindModalEvents(matchId, matchType, div) {
 }
 
 function saveIndividualResult(matchId) {
-  const score1 = parseInt(document.getElementById('score1')?.value) || 0;
-  const score2 = parseInt(document.getElementById('score2')?.value) || 0;
+  const score1 = Math.max(0, parseInt(document.getElementById('score1')?.value) || 0);
+  const score2 = Math.max(0, parseInt(document.getElementById('score2')?.value) || 0);
 
+  closeMatchModal();
   updateState(s => {
-    const div = s.divisions[s.activeDivision];
-    const match = div.bracket.rounds.flatMap(r => r.matches).find(m => m.id === matchId);
+    const activDiv = s.divisions[s.activeDivision];
+    const match = activDiv.bracket.rounds.flatMap(r => r.matches).find(m => m.id === matchId);
     if (!match) return;
     match.score1 = score1;
     match.score2 = score2;
     match.winner = calcIndividualWinner(match);
     match.status = 'done';
     if (match.winner) {
-      advanceWinner(div.bracket, matchId, match.winner, true);
+      advanceWinner(activDiv.bracket, matchId, match.winner, true);
     }
   });
-  closeMatchModal();
 }
 
 function saveTeamResult(matchId, div) {
@@ -162,8 +166,11 @@ function saveTeamResult(matchId, div) {
   const score2Inputs = document.querySelectorAll('.bout-score2');
   const lineupItems = document.querySelectorAll('#lineup-t1 .lineup-item');
 
+  if (score1Inputs.length !== score2Inputs.length) return;
+
   const lineup1 = Array.from(lineupItems).map(el => el.dataset.pid);
 
+  closeMatchModal();
   updateState(s => {
     const activDiv = s.divisions[s.activeDivision];
     const match = activDiv.bracket.rounds.flatMap(r => r.matches).find(m => m.id === matchId);
@@ -171,8 +178,8 @@ function saveTeamResult(matchId, div) {
 
     match.lineup1 = lineup1;
     match.bouts = Array.from(score1Inputs).map((inp, i) => {
-      const s1 = parseInt(inp.value) || 0;
-      const s2 = parseInt(score2Inputs[i].value) || 0;
+      const s1 = Math.max(0, parseInt(inp.value) || 0);
+      const s2 = Math.max(0, parseInt(score2Inputs[i]?.value) || 0);
       const bout = {
         score1: s1, score2: s2, winner: null, status: 'done',
         position: activDiv.positions[i] ?? `포지션${i+1}`,
@@ -200,7 +207,6 @@ function saveTeamResult(matchId, div) {
       match.status = 'ongoing';
     }
   });
-  closeMatchModal();
 }
 
 function setupLineupDragDrop(containerId, positions) {
