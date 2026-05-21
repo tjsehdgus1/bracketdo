@@ -106,6 +106,36 @@ export function generateTeamBracket(teams) {
   return bracket;
 }
 
+export function generateEmptyBracket(count, type = 'individual') {
+  const size = nextPowerOfTwo(Math.max(count, 2));
+  const totalRounds = Math.log2(size);
+  const rounds = [];
+
+  for (let r = 1; r <= totalRounds; r++) {
+    const matchCount = size / Math.pow(2, r);
+    const matches = Array.from({ length: matchCount }, () => {
+      const m = {
+        id: makeMatchId(),
+        type,
+        score1: 0, score2: 0,
+        winner: null,
+        status: 'pending',
+      };
+      if (type === 'team') {
+        m.team1 = null; m.team2 = null;
+        m.lineup1 = []; m.lineup2 = [];
+        m.bouts = []; m.tiebreaker = null;
+        m.wins1 = 0; m.wins2 = 0;
+      } else {
+        m.player1 = null; m.player2 = null;
+      }
+      return m;
+    });
+    rounds.push({ roundNo: r, label: roundLabel(totalRounds, r), matches });
+  }
+  return { rounds };
+}
+
 // mutate=true이면 bracket을 직접 수정 (내부 전용), false이면 새 객체 반환
 export function advanceWinner(bracket, matchId, winnerId, mutate = false) {
   const target = mutate ? bracket : JSON.parse(JSON.stringify(bracket));

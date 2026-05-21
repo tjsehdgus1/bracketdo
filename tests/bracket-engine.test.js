@@ -3,6 +3,7 @@ import {
   generateBracket,
   generateTeamBracket,
   advanceWinner,
+  generateEmptyBracket,   // 새로 추가
 } from '../src/bracket-engine.js';
 
 describe('nextPowerOfTwo', () => {
@@ -123,5 +124,47 @@ describe('advanceWinner', () => {
     const m0 = bracket.rounds[0].matches[0];
     const updated = advanceWinner(bracket, m0.id, m0.team1);
     expect(updated.rounds[1].matches[0].team1).toBe(m0.team1);
+  });
+});
+
+describe('generateEmptyBracket', () => {
+  test('4명 → 2라운드, 1라운드 2경기, 모든 슬롯 null', () => {
+    const b = generateEmptyBracket(4, 'individual');
+    expect(b.rounds).toHaveLength(2);
+    expect(b.rounds[0].matches).toHaveLength(2);
+    b.rounds[0].matches.forEach(m => {
+      expect(m.player1).toBeNull();
+      expect(m.player2).toBeNull();
+      expect(m.status).toBe('pending');
+    });
+  });
+
+  test('3명 → nextPowerOfTwo(3)=4 크기 브라켓 생성', () => {
+    const b = generateEmptyBracket(3, 'individual');
+    expect(b.rounds).toHaveLength(2);
+    expect(b.rounds[0].matches).toHaveLength(2);
+  });
+
+  test('type=team → team1/team2 필드, lineup/bouts 포함', () => {
+    const b = generateEmptyBracket(2, 'team');
+    const m = b.rounds[0].matches[0];
+    expect(m.team1).toBeNull();
+    expect(m.team2).toBeNull();
+    expect(Array.isArray(m.bouts)).toBe(true);
+    expect(Array.isArray(m.lineup1)).toBe(true);
+    expect(m.type).toBe('team');
+  });
+
+  test('roundNo, label 필드 포함', () => {
+    const b = generateEmptyBracket(4, 'individual');
+    expect(b.rounds[0].roundNo).toBe(1);
+    expect(typeof b.rounds[0].label).toBe('string');
+    expect(b.rounds[1].label).toBe('결승');
+  });
+
+  test('각 경기 id는 고유', () => {
+    const b = generateEmptyBracket(8, 'individual');
+    const ids = b.rounds.flatMap(r => r.matches.map(m => m.id));
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });

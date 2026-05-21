@@ -26,7 +26,8 @@ function totalWidth(totalRounds) {
 }
 
 function getParticipantName(participantId, division) {
-  if (!participantId || participantId === 'bye') return 'BYE';
+  if (participantId === 'bye') return 'BYE';
+  if (!participantId) return '—';
   if (division.type === 'individual') {
     return division.players.find(p => p.id === participantId)?.name ?? '?';
   } else {
