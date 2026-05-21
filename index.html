@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KendoBracket — 관리자</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="admin">
+
+  <!-- 헤더 -->
+  <header id="header">
+    <div class="header-left">
+      <span class="logo">🏆 KendoBracket</span>
+      <input id="title-input" type="text" placeholder="대회명을 입력하세요" autocomplete="off">
+    </div>
+    <div class="header-right">
+      <button id="btn-open-display">전광판 열기 ↗</button>
+    </div>
+  </header>
+
+  <!-- 메인 레이아웃: 좌우 분할 -->
+  <div id="main-layout">
+
+    <!-- 좌측 사이드바 -->
+    <aside id="sidebar">
+
+      <!-- 체급 탭 -->
+      <section id="division-section">
+        <div id="division-tabs"></div>
+        <div id="division-settings"></div>
+      </section>
+
+      <!-- 선수/팀 목록 -->
+      <section id="roster-section">
+        <div id="roster-list"></div>
+        <div id="roster-actions"></div>
+      </section>
+
+      <!-- 전광판 제어 -->
+      <section id="display-control">
+        <h3>전광판 제어</h3>
+        <div id="display-ctrl-content"></div>
+      </section>
+
+      <!-- JSON 백업 -->
+      <section id="backup-section">
+        <button id="btn-export">JSON 내보내기</button>
+        <button id="btn-import">JSON 불러오기</button>
+        <input id="import-file" type="file" accept=".json" style="display:none">
+      </section>
+
+    </aside>
+
+    <!-- 우측 브라켓 영역 -->
+    <main id="bracket-area">
+      <div id="bracket-container"></div>
+    </main>
+
+  </div>
+
+  <!-- 모달 오버레이 -->
+  <div id="modal-overlay" class="hidden">
+    <div id="modal-box"></div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

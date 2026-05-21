@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KendoBracket — 전광판</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="display">
+
+  <div id="display-wrapper">
+
+    <!-- 전광판 헤더 -->
+    <div id="display-header">
+      <span id="display-title"></span>
+      <div id="display-controls">
+        <button id="btn-mode-current">현재 경기</button>
+        <button id="btn-mode-bracket">대진표</button>
+        <button id="btn-mode-result">결과</button>
+        <button id="btn-fullscreen">⛶</button>
+        <label>
+          <input type="checkbox" id="cb-autoslide"> 자동
+        </label>
+      </div>
+    </div>
+
+    <!-- 전광판 콘텐츠 영역 -->
+    <div id="display-content">
+      <!-- renderDisplay()가 내용을 채움 -->
+    </div>
+
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
