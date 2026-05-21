@@ -221,57 +221,63 @@ function renderBracketArea(state) {
 }
 
 function setupBracketDragDrop(container, division) {
+  // HTML5 DnD API는 SVG 요소를 지원하지 않으므로 Pointer Events API 사용
   let dragSource = null; // { matchId, slot: 0 | 1 }
 
   container.querySelectorAll('[data-match-id]').forEach(el => {
-    el.setAttribute('draggable', 'true');
-
-    el.addEventListener('dragstart', e => {
-      const elRect = el.getBoundingClientRect();
-      const slot = e.clientY < elRect.top + elRect.height / 2 ? 0 : 1;
+    el.style.cursor = 'grab';
+    el.addEventListener('pointerdown', e => {
+      const rect = el.getBoundingClientRect();
+      const slot = e.clientY < rect.top + rect.height / 2 ? 0 : 1;
       dragSource = { matchId: el.dataset.matchId, slot };
-      e.dataTransfer.effectAllowed = 'move';
-    });
-
-    el.addEventListener('dragover', e => {
       e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
     });
-
-    el.addEventListener('drop', e => {
-      e.preventDefault();
-      if (!dragSource) return;
-      const targetMatchId = el.dataset.matchId;
-      const elRect = el.getBoundingClientRect();
-      const targetSlot = e.clientY < elRect.top + elRect.height / 2 ? 0 : 1;
-
-      // No-op: same slot
-      if (dragSource.matchId === targetMatchId && dragSource.slot === targetSlot) {
-        dragSource = null;
-        return;
-      }
-
-      updateState(s => {
-        const div = s.divisions[s.activeDivision];
-        const allMatches = div.bracket.rounds.flatMap(r => r.matches);
-        const srcMatch = allMatches.find(m => m.id === dragSource.matchId);
-        const tgtMatch = allMatches.find(m => m.id === targetMatchId);
-        if (!srcMatch || !tgtMatch) return;
-        if (srcMatch.type !== tgtMatch.type) return;
-
-        const isTeam = srcMatch.type === 'team';
-        const slots = isTeam ? ['team1', 'team2'] : ['player1', 'player2'];
-        const srcKey = slots[dragSource.slot];
-        const tgtKey = slots[targetSlot];
-
-        [srcMatch[srcKey], tgtMatch[tgtKey]] = [tgtMatch[tgtKey], srcMatch[srcKey]];
-      });
-
-      dragSource = null;
-    });
-
-    el.addEventListener('dragend', () => { dragSource = null; });
   });
+
+  // 이전 리스너 제거 후 재등록 (renderAll 반복 호출 시 누적 방지)
+  if (container._bracketPointerUp) {
+    container.removeEventListener('pointerup', container._bracketPointerUp);
+  }
+  const onPointerUp = e => {
+    if (!dragSource) return;
+    const src = dragSource;
+    dragSource = null;
+
+    const hits = document.elementsFromPoint(e.clientX, e.clientY);
+    const targetEl = hits.find(el => el.dataset && el.dataset.matchId);
+    if (!targetEl) return;
+
+    const targetMatchId = targetEl.dataset.matchId;
+    const rect = targetEl.getBoundingClientRect();
+    const targetSlot = e.clientY < rect.top + rect.height / 2 ? 0 : 1;
+
+    if (src.matchId === targetMatchId && src.slot === targetSlot) return;
+
+    updateState(s => {
+      const div = s.divisions[s.activeDivision];
+      const allMatches = div.bracket.rounds.flatMap(r => r.matches);
+      const srcMatch = allMatches.find(m => m.id === src.matchId);
+      const tgtMatch = allMatches.find(m => m.id === targetMatchId);
+      if (!srcMatch || !tgtMatch) return;
+      if (srcMatch.type !== tgtMatch.type) return;
+
+      const isTeam = srcMatch.type === 'team';
+      const slots = isTeam ? ['team1', 'team2'] : ['player1', 'player2'];
+      const srcKey = slots[src.slot];
+      const tgtKey = slots[targetSlot];
+
+      [srcMatch[srcKey], tgtMatch[tgtKey]] = [tgtMatch[tgtKey], srcMatch[srcKey]];
+    });
+  };
+  container._bracketPointerUp = onPointerUp;
+  container.addEventListener('pointerup', onPointerUp);
+
+  if (container._bracketPointerCancel) {
+    container.removeEventListener('pointercancel', container._bracketPointerCancel);
+  }
+  const onPointerCancel = () => { dragSource = null; };
+  container._bracketPointerCancel = onPointerCancel;
+  container.addEventListener('pointercancel', onPointerCancel);
 }
 
 function bindAdminEvents() {
@@ -329,10 +335,13 @@ function bindAdminEvents() {
     }
   });
 
-  // Enter 키로 선수 추가
+  // Enter 키로 선수/팀 추가
   root.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && e.target.id === 'new-player-name') {
+    if (e.key !== 'Enter') return;
+    if (e.target.id === 'new-player-name' || e.target.id === 'new-player-club') {
       document.getElementById('btn-add-player')?.click();
+    } else if (e.target.id === 'new-team-name') {
+      document.getElementById('btn-add-team')?.click();
     }
   });
 
