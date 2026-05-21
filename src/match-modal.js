@@ -99,6 +99,7 @@ function renderTeamMatchModal(match, div) {
 
     <div style="margin-bottom:16px">
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">라인업 (드래그로 순서 변경)</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">${escHtml(t1.name)}</div>
       <div id="lineup-t1" style="display:flex;flex-direction:column;gap:3px">
         ${lineup1.map((pid, i) => {
           const p = getPlayerById(t1, pid);
@@ -109,6 +110,20 @@ function renderTeamMatchModal(match, div) {
             <span style="font-size:12px">${escHtml(p?.name ?? pid)}</span>
           </div>`;
         }).join('')}
+      </div>
+      <div style="margin-top:8px">
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">${escHtml(t2.name)}</div>
+        <div id="lineup-t2" style="display:flex;flex-direction:column;gap:3px">
+          ${lineup2.map((pid, i) => {
+            const p = getPlayerById(t2, pid);
+            return `<div class="lineup-item" draggable="true" data-team="2" data-idx="${i}" data-pid="${pid}"
+              style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:var(--bg-card);border:1px solid var(--border);border-radius:4px;cursor:grab">
+              <span style="color:var(--text-muted);font-size:11px">⠿</span>
+              <span style="color:var(--text-muted);font-size:10px;width:28px">${escHtml(div.positions[i] ?? String(i+1))}</span>
+              <span style="font-size:12px">${escHtml(p?.name ?? pid)}</span>
+            </div>`;
+          }).join('')}
+        </div>
       </div>
     </div>
 
@@ -139,10 +154,14 @@ function bindModalEvents(matchId, matchType, div) {
   // 라인업 드래그앤드롭 (단체전)
   if (matchType === 'team') {
     setupLineupDragDrop('lineup-t1', div.positions);
+    setupLineupDragDrop('lineup-t2', div.positions);
   }
 }
 
 function saveIndividualResult(matchId) {
+  // Note: re-editing a completed match does NOT retract the previously advanced winner.
+  // The next-round slot will retain the old winner until the tournament admin
+  // manually adjusts it via bracket drag-and-drop.
   const score1 = Math.max(0, parseInt(document.getElementById('score1')?.value) || 0);
   const score2 = Math.max(0, parseInt(document.getElementById('score2')?.value) || 0);
 
@@ -162,13 +181,16 @@ function saveIndividualResult(matchId) {
 }
 
 function saveTeamResult(matchId, div) {
+  // Note: re-editing a completed match does NOT retract the previously advanced winner.
+  // The next-round slot will retain the old winner until the tournament admin
+  // manually adjusts it via bracket drag-and-drop.
   const score1Inputs = document.querySelectorAll('.bout-score1');
   const score2Inputs = document.querySelectorAll('.bout-score2');
-  const lineupItems = document.querySelectorAll('#lineup-t1 .lineup-item');
 
   if (score1Inputs.length !== score2Inputs.length) return;
 
-  const lineup1 = Array.from(lineupItems).map(el => el.dataset.pid);
+  const lineup1 = Array.from(document.querySelectorAll('#lineup-t1 .lineup-item')).map(el => el.dataset.pid);
+  const lineup2 = Array.from(document.querySelectorAll('#lineup-t2 .lineup-item')).map(el => el.dataset.pid);
 
   closeMatchModal();
   updateState(s => {
@@ -177,6 +199,7 @@ function saveTeamResult(matchId, div) {
     if (!match) return;
 
     match.lineup1 = lineup1;
+    match.lineup2 = lineup2;
     match.bouts = Array.from(score1Inputs).map((inp, i) => {
       const s1 = Math.max(0, parseInt(inp.value) || 0);
       const s2 = Math.max(0, parseInt(score2Inputs[i]?.value) || 0);
@@ -191,6 +214,8 @@ function saveTeamResult(matchId, div) {
     const result = calcTeamMatchResult(match);
     match.wins1 = result.wins1;
     match.wins2 = result.wins2;
+    match.score1 = result.wins1;
+    match.score2 = result.wins2;
 
     if (result.winner && result.winner !== 'tiebreaker') {
       match.winner = result.winner;

@@ -115,4 +115,13 @@ describe('advanceWinner', () => {
     advanceWinner(bracket, m0.id, m0.player1);
     expect(JSON.stringify(bracket)).toBe(original);
   });
+
+  test('팀 브라켓에서 승자가 team1/team2로 진출', () => {
+    const makeTeamList = (n) =>
+      Array.from({ length: n }, (_, i) => ({ id: `t${i + 1}`, name: `팀${i + 1}`, roster: [], lastLineup: [] }));
+    const bracket = generateTeamBracket(makeTeamList(4));
+    const m0 = bracket.rounds[0].matches[0];
+    const updated = advanceWinner(bracket, m0.id, m0.team1);
+    expect(updated.rounds[1].matches[0].team1).toBe(m0.team1);
+  });
 });
