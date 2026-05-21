@@ -138,8 +138,6 @@ function renderMatchBox(svg, match, x, y, division) {
       rx: 3,
       fill, stroke, 'stroke-width': 1,
       ...(isByeSlot ? { 'stroke-dasharray': '4,2' } : {}),
-      'data-match-id': match.id,
-      style: 'cursor:pointer',
       class: isOngoing ? 'match-ongoing' : '',
     });
     svg.appendChild(rect);
