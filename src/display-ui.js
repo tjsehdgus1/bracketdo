@@ -5,23 +5,28 @@ import { renderBracketSVG } from './svg-bracket.js';
 let _autoSlideTimer = null;
 const _modes = ['current', 'bracket', 'result'];
 let _modeIdx = 0;
+let _storageListenerAttached = false;
+
+function escHtml(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 
 export function initDisplay() {
   loadState();
   bindDisplayEvents();
   renderDisplay();
 
-  window.addEventListener('storage', e => {
-    if (e.key === 'kendo_state') {
-      try {
-        const parsed = JSON.parse(e.newValue);
-        if (parsed) {
-          Object.assign(getState(), parsed);
-          renderDisplay();
-        }
-      } catch (_) {}
-    }
-  });
+  if (!_storageListenerAttached) {
+    _storageListenerAttached = true;
+    window.addEventListener('storage', e => {
+      if (e.key === 'kendo_state') {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed) { Object.assign(getState(), parsed); renderDisplay(); }
+        } catch (_) {}
+      }
+    });
+  }
 }
 
 export function renderDisplay() {
@@ -60,6 +65,7 @@ export function renderDisplay() {
   if (_autoSlideTimer) { clearInterval(_autoSlideTimer); _autoSlideTimer = null; }
   if (state.display.autoSlide) {
     _autoSlideTimer = setInterval(() => {
+      // Local mode advance — not persisted to localStorage (display-only slide show)
       _modeIdx = (_modeIdx + 1) % _modes.length;
       getState().display.mode = _modes[_modeIdx];
       renderDisplay();
@@ -111,19 +117,19 @@ function renderCurrentMatch(state, container) {
   container.innerHTML = `
     <div id="current-match-view">
       <div class="current-match-header">
-        ${state.meta.title} &nbsp;—&nbsp; ${round.label}
+        ${escHtml(state.meta.title)} &nbsp;—&nbsp; ${escHtml(round.label)}
       </div>
       ${teamWinsHtml}
       <div class="current-match-players">
         <div class="player-side">
-          <div class="player-name">${[...p1.name].join('​')}</div>
-          ${p1.club ? `<div class="player-club">${p1.club}</div>` : ''}
+          <div class="player-name">${escHtml([...p1.name].join(' '))}</div>
+          ${p1.club ? `<div class="player-club">${escHtml(p1.club)}</div>` : ''}
           <div class="player-score">${match.score1 ?? 0}</div>
           <div class="player-score-label">본</div>
         </div>
         <div class="player-side">
-          <div class="player-name">${[...p2.name].join('​')}</div>
-          ${p2.club ? `<div class="player-club">${p2.club}</div>` : ''}
+          <div class="player-name">${escHtml([...p2.name].join(' '))}</div>
+          ${p2.club ? `<div class="player-club">${escHtml(p2.club)}</div>` : ''}
           <div class="player-score">${match.score2 ?? 0}</div>
           <div class="player-score-label">본</div>
         </div>
@@ -148,12 +154,12 @@ function renderBracketMode(state, container) {
     const tabs = document.createElement('div');
     tabs.style.cssText = 'display:flex;gap:6px;padding:8px 16px;';
     state.divisions.forEach((d, i) => {
-      const btn = document.createElement('button');
-      btn.textContent = d.name || `체급 ${i + 1}`;
-      if (i === state.activeDivision) {
-        btn.style.cssText = 'background:#1e3a5f;border-color:var(--accent-blue);';
-      }
-      tabs.appendChild(btn);
+      const tab = document.createElement('span');
+      tab.textContent = d.name || `체급 ${i + 1}`;
+      tab.style.cssText = i === state.activeDivision
+        ? 'background:#1e3a5f;border:1px solid var(--accent-blue);color:var(--accent-blue);padding:3px 10px;border-radius:4px;font-size:12px;'
+        : 'background:var(--bg-card);border:1px solid var(--border);color:var(--text-muted);padding:3px 10px;border-radius:4px;font-size:12px;';
+      tabs.appendChild(tab);
     });
     wrapper.appendChild(tabs);
   }
@@ -195,15 +201,15 @@ function renderResultHighlight(state, container) {
     const card = document.createElement('div');
     card.className = 'result-card';
     card.innerHTML = `
-      <div class="result-card-label">방금 종료 — ${lastRound.label}</div>
+      <div class="result-card-label">방금 종료 — ${escHtml(lastRound.label)}</div>
       <div class="result-score-row">
-        <div class="result-player-name" style="color:${winnerSide === 'p1' ? 'var(--text-primary)' : 'var(--text-muted)'}">${p1.name}</div>
+        <div class="result-player-name" style="color:${winnerSide === 'p1' ? 'var(--text-primary)' : 'var(--text-muted)'}">${escHtml(p1.name)}</div>
         <div class="result-score-nums">
           <span class="${winnerSide === 'p1' ? 'winner-score' : 'loser-score'}">${lastDone.score1 ?? 0}</span>
           <span class="sep">:</span>
           <span class="${winnerSide === 'p2' ? 'winner-score' : 'loser-score'}">${lastDone.score2 ?? 0}</span>
         </div>
-        <div class="result-player-name" style="color:${winnerSide === 'p2' ? 'var(--text-primary)' : 'var(--text-muted)'};text-align:right">${p2.name}</div>
+        <div class="result-player-name" style="color:${winnerSide === 'p2' ? 'var(--text-primary)' : 'var(--text-muted)'};text-align:right">${escHtml(p2.name)}</div>
       </div>
     `;
     wrapper.appendChild(card);
@@ -218,11 +224,11 @@ function renderResultHighlight(state, container) {
     const card = document.createElement('div');
     card.className = 'result-card';
     card.innerHTML = `
-      <div class="result-card-label">▶ 다음 경기 — ${nextRound.label}</div>
+      <div class="result-card-label">▶ 다음 경기 — ${escHtml(nextRound.label)}</div>
       <div class="result-score-row" style="justify-content:center;gap:24px">
-        <div class="result-player-name">${p1.name}</div>
+        <div class="result-player-name">${escHtml(p1.name)}</div>
         <div style="font-size:20px;color:var(--text-muted)">vs</div>
-        <div class="result-player-name">${p2.name}</div>
+        <div class="result-player-name">${escHtml(p2.name)}</div>
       </div>
     `;
     wrapper.appendChild(card);
@@ -236,6 +242,8 @@ function renderResultHighlight(state, container) {
 }
 
 function bindDisplayEvents() {
+  // Display page mutates state directly (no saveState/localStorage write).
+  // The display page is read-only — mode changes here are local only.
   ['current', 'bracket', 'result'].forEach(mode => {
     document.getElementById(`btn-mode-${mode}`)?.addEventListener('click', () => {
       const s = getState();

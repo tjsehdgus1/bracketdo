@@ -173,7 +173,7 @@ function renderDisplayControls(state) {
           if (div.type === 'individual') return div.players.find(p => p.id === id)?.name ?? id;
           return div.teams.find(t => t.id === id)?.name ?? id;
         };
-        return `<option value="${m.id}" ${state.display.currentMatchId === m.id ? 'selected' : ''}>${getName(p1Id)} vs ${getName(p2Id)}</option>`;
+        return `<option value="${m.id}" ${state.display.currentMatchId === m.id ? 'selected' : ''}>${escHtml(getName(p1Id))} vs ${escHtml(getName(p2Id))}</option>`;
       })
   ) : [];
 
