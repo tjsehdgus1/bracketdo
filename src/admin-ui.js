@@ -1,6 +1,14 @@
 // src/admin-ui.js
 import { getState, getActiveDivision, updateState, EMPTY_DIVISION } from './state.js';
 
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 export function initAdmin() {
   bindAdminEvents();
   renderAll();
@@ -54,7 +62,7 @@ function renderDivisionSettings(state) {
 
   container.innerHTML = `
     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-      <input id="div-name-input" type="text" placeholder="체급명" value="${div.name}" style="flex:1;min-width:80px">
+      <input id="div-name-input" type="text" placeholder="체급명" value="${escHtml(div.name)}" style="flex:1;min-width:80px">
       <select id="div-type-select" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);padding:5px 8px;border-radius:4px;font-size:13px">
         <option value="individual" ${div.type === 'individual' ? 'selected' : ''}>개인전</option>
         <option value="team" ${div.type === 'team' ? 'selected' : ''}>단체전</option>
@@ -106,8 +114,8 @@ function renderPlayerList(div, container) {
     item.dataset.playerId = p.id;
     item.innerHTML = `
       <span style="color:var(--text-muted);font-size:10px;width:16px">${i + 1}</span>
-      <span style="flex:1">${p.name}</span>
-      <span style="color:var(--text-muted);font-size:11px">${p.club}</span>
+      <span style="flex:1">${escHtml(p.name)}</span>
+      <span style="color:var(--text-muted);font-size:11px">${escHtml(p.club)}</span>
       <div class="move-btns">
         <button data-action="up" data-idx="${i}">↑</button>
         <button data-action="down" data-idx="${i}">↓</button>
@@ -125,14 +133,14 @@ function renderTeamList(div, container) {
     item.style.cssText = 'background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:8px;margin-bottom:6px';
     item.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <strong style="font-size:12px">${team.name}</strong>
+        <strong style="font-size:12px">${escHtml(team.name)}</strong>
         <button class="delete-btn" data-action="delete-team" data-idx="${ti}">✕</button>
       </div>
       <div style="display:flex;flex-direction:column;gap:3px">
         ${team.roster.map((p, pi) => `
           <div style="display:flex;gap:4px;align-items:center;font-size:11px;color:var(--text-muted)">
             <span style="width:30px">${div.positions[pi] ?? `포지션${pi+1}`}</span>
-            <span style="flex:1;color:var(--text-primary)">${p.name}</span>
+            <span style="flex:1;color:var(--text-primary)">${escHtml(p.name)}</span>
           </div>
         `).join('')}
         ${team.roster.length < div.teamSize ? `
@@ -237,8 +245,6 @@ function bindAdminEvents() {
         const div = s.divisions[s.activeDivision];
         div.players.push({ id: 'p' + Date.now(), name, club: club || '', seed: div.players.length + 1 });
       });
-      document.getElementById('new-player-name').value = '';
-      document.getElementById('new-player-club').value = '';
     }
   });
 
@@ -334,15 +340,18 @@ function bindAdminEvents() {
   // 대진표 자동 생성
   root.addEventListener('click', e => {
     if (e.target.id === 'btn-generate-bracket') {
+      const div = getActiveDivision();
+      if (!div) return;
+      if (div.type === 'individual' && div.players.length < 2) {
+        alert('선수가 최소 2명 이상이어야 합니다.');
+        return;
+      }
+      if (div.type === 'team' && div.teams.length < 2) {
+        alert('팀이 최소 2개 이상이어야 합니다.');
+        return;
+      }
       updateState(s => {
-        const div = s.divisions[s.activeDivision];
-        if (div.type === 'individual') {
-          if (div.players.length < 2) { alert('선수가 최소 2명 이상이어야 합니다.'); return; }
-          // bracket generation will be wired in Task 7
-        } else {
-          if (div.teams.length < 2) { alert('팀이 최소 2개 이상이어야 합니다.'); return; }
-          // bracket generation will be wired in Task 7
-        }
+        // bracket generation wired in Task 7
       });
     }
   });
