@@ -160,21 +160,37 @@ function renderTeamList(div, container) {
 function renderDisplayControls(state) {
   const container = document.getElementById('display-ctrl-content');
   if (!container) return;
-  const modes = [
-    { value: 'current', label: '현재 경기' },
-    { value: 'bracket', label: '대진표' },
-    { value: 'result', label: '결과' },
-  ];
+  const div = getActiveDivision();
+
+  const matchOptions = div ? div.bracket.rounds.flatMap(r =>
+    r.matches
+      .filter(m => m.status !== 'done')
+      .map(m => {
+        const p1Id = m.type === 'team' ? m.team1 : m.player1;
+        const p2Id = m.type === 'team' ? m.team2 : m.player2;
+        const getName = (id) => {
+          if (!id || id === 'bye') return 'BYE';
+          if (div.type === 'individual') return div.players.find(p => p.id === id)?.name ?? id;
+          return div.teams.find(t => t.id === id)?.name ?? id;
+        };
+        return `<option value="${m.id}" ${state.display.currentMatchId === m.id ? 'selected' : ''}>${getName(p1Id)} vs ${getName(p2Id)}</option>`;
+      })
+  ) : [];
+
   container.innerHTML = `
     <div style="display:flex;flex-direction:column;gap:6px">
       <div style="display:flex;gap:4px;flex-wrap:wrap">
-        ${modes.map(m => `
-          <button data-action="set-display-mode" data-mode="${m.value}"
-            style="${state.display.mode === m.value ? 'background:var(--bg-active);border-color:var(--accent-blue)' : ''}">
-            ${m.label}
+        ${['current','bracket','result'].map(m => `
+          <button data-action="set-display-mode" data-mode="${m}"
+            style="${state.display.mode === m ? 'background:var(--bg-active);border-color:var(--accent-blue)' : ''}">
+            ${{ current:'현재 경기', bracket:'대진표', result:'결과' }[m]}
           </button>
         `).join('')}
       </div>
+      <select id="current-match-select" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);padding:5px 8px;border-radius:4px;font-size:12px">
+        <option value="">현재 경기 선택...</option>
+        ${matchOptions.join('')}
+      </select>
       <label for="cb-autoslide-admin" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted)">
         <input type="checkbox" id="cb-autoslide-admin" ${state.display.autoSlide ? 'checked' : ''}>
         자동 슬라이드 (10초)
@@ -399,6 +415,13 @@ function bindAdminEvents() {
   root.addEventListener('change', e => {
     if (e.target.id === 'cb-autoslide-admin') {
       updateState(s => { s.display.autoSlide = e.target.checked; });
+    }
+  });
+
+  // 현재 경기 지정
+  root.addEventListener('change', e => {
+    if (e.target.id === 'current-match-select') {
+      updateState(s => { s.display.currentMatchId = e.target.value || null; });
     }
   });
 
