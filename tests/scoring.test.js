@@ -65,6 +65,14 @@ describe('calcTeamMatchResult', () => {
     expect(result.winner).toBe('t1');
   });
 
+  test('승수 동점 + 팀2 본수 우세 → team2 승리', () => {
+    // 각 2승 2패 1무, 팀1 본수 5 vs 팀2 본수 6
+    const result = calcTeamMatchResult(makeMatch([[2,0],[0,2],[1,3],[2,1],[0,0]]));
+    expect(result.winner).toBe('t2');
+    expect(result.wins1).toBe(2);
+    expect(result.wins2).toBe(2);
+  });
+
   test('승수·본수 모두 동점 → tiebreaker 필요', () => {
     const result = calcTeamMatchResult(makeMatch([[2,0],[0,2],[1,1],[0,2],[2,0]]));
     expect(result.winner).toBe('tiebreaker');
