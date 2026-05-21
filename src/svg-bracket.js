@@ -100,7 +100,8 @@ export function renderBracketSVG(division, container) {
 }
 
 function renderMatchBox(svg, match, x, y, division) {
-  const isBye = (id) => !id || id === 'bye';
+  const isBye   = (id) => id === 'bye';
+  const isEmpty = (id) => !id && id !== 'bye';
   const p1Id = match.type === 'team' ? match.team1 : match.player1;
   const p2Id = match.type === 'team' ? match.team2 : match.player2;
 
@@ -110,13 +111,14 @@ function renderMatchBox(svg, match, x, y, division) {
     const slotY = y + slot * (boxH + 2);
     const isWinner = match.winner === pId;
     const isByeSlot = isBye(pId);
-    const isOngoing = match.status === 'ongoing' && !isByeSlot;
+    const isEmptySlot = isEmpty(pId);
+    const isOngoing = match.status === 'ongoing' && !isByeSlot && !isEmptySlot;
 
     let fill = '#1a1a2e';
     let stroke = '#374151';
     let textColor = '#6b7280';
 
-    if (isByeSlot) {
+    if (isByeSlot || isEmptySlot) {
       stroke = '#374151';
       fill = '#111';
     } else if (isWinner) {
@@ -138,7 +140,7 @@ function renderMatchBox(svg, match, x, y, division) {
       width: MATCH_W, height: boxH,
       rx: 3,
       fill, stroke, 'stroke-width': 1,
-      ...(isByeSlot ? { 'stroke-dasharray': '4,2' } : {}),
+      ...(isByeSlot ? { 'stroke-dasharray': '4,2' } : isEmptySlot ? { 'stroke-dasharray': '4,2' } : {}),
       class: isOngoing ? 'match-ongoing' : '',
     });
     svg.appendChild(rect);
@@ -152,10 +154,10 @@ function renderMatchBox(svg, match, x, y, division) {
       'font-size': 11,
       fill: textColor,
     });
-    text.textContent = isByeSlot ? 'BYE' : name;
+    text.textContent = isByeSlot ? 'BYE' : isEmptySlot ? '—' : name;
     svg.appendChild(text);
 
-    if (!isByeSlot && match.status !== 'pending') {
+    if (!isByeSlot && !isEmptySlot && match.status !== 'pending') {
       const scoreText = createSVGEl('text', {
         x: x + MATCH_W - 10,
         y: slotY + boxH / 2 + 4,
