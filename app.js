@@ -20,11 +20,12 @@ if (page === 'admin') {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     const now = new Date();
-    const ts = now.toISOString().slice(0, 19).replace(/[:\-T]/g, '');
+    const pad = n => String(n).padStart(2, '0');
+    const ts = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
     a.href = url;
     a.download = `kendobracket_${ts}.json`;
     a.click();
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 100);
   });
 
   // JSON 불러오기 버튼 → 파일 선택 트리거
@@ -46,9 +47,9 @@ if (page === 'admin') {
       } catch (err) {
         alert('파일 오류: ' + err.message);
       }
+      e.target.value = ''; // reset here, after async read completes
     };
     reader.readAsText(file);
-    e.target.value = ''; // allow re-importing same file
   });
 
 } else if (page === 'display') {
