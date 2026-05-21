@@ -8,17 +8,17 @@ export const EMPTY_DIVISION = () => ({
   bracket: { rounds: [] },
 });
 
-export const INITIAL_STATE = {
-  meta: { title: '', updatedAt: 0 },
+export const INITIAL_STATE = Object.freeze({
+  meta: Object.freeze({ title: '', updatedAt: 0 }),
   activeDivision: 0,
   divisions: [],
-  display: {
+  display: Object.freeze({
     mode: 'bracket',        // 'current' | 'bracket' | 'result'
     currentMatchId: null,
     autoSlide: false,
     slideInterval: 10000,
-  },
-};
+  }),
+});
 
 let _state = JSON.parse(JSON.stringify(INITIAL_STATE));
 let _renderAll = null;
@@ -38,7 +38,9 @@ export function getActiveDivision() {
 export function loadState() {
   const raw = localStorage.getItem('kendo_state');
   if (raw) {
-    try { _state = JSON.parse(raw); } catch (_) {}
+    try { _state = JSON.parse(raw); } catch (e) {
+      console.warn('kendo_state parse failed, starting fresh:', e);
+    }
   }
   return _state;
 }
