@@ -1,5 +1,7 @@
 // src/admin-ui.js
 import { getState, getActiveDivision, updateState, EMPTY_DIVISION } from './state.js';
+import { renderBracketSVG } from './svg-bracket.js';
+import { generateBracket, generateTeamBracket } from './bracket-engine.js';
 
 function escHtml(str) {
   return String(str)
@@ -182,7 +184,6 @@ function renderDisplayControls(state) {
 }
 
 function renderBracketArea(state) {
-  // SVG rendering added in Task 7
   const container = document.getElementById('bracket-container');
   if (!container) return;
   const div = getActiveDivision();
@@ -190,7 +191,15 @@ function renderBracketArea(state) {
     container.innerHTML = '<p style="color:var(--text-muted);margin:40px;text-align:center">대진표를 생성하세요</p>';
     return;
   }
-  // SVG rendering will replace this placeholder in Task 7
+  renderBracketSVG(div, container);
+
+  // SVG match click events
+  container.querySelectorAll('[data-match-id]').forEach(el => {
+    el.addEventListener('click', () => {
+      const modal = window._matchModal;
+      if (modal?.openMatchModal) modal.openMatchModal(el.dataset.matchId);
+    });
+  });
 }
 
 function bindAdminEvents() {
@@ -351,7 +360,10 @@ function bindAdminEvents() {
         return;
       }
       updateState(s => {
-        // bracket generation wired in Task 7
+        const d = s.divisions[s.activeDivision];
+        d.bracket = d.type === 'individual'
+          ? generateBracket(d.players)
+          : generateTeamBracket(d.teams);
       });
     }
   });
