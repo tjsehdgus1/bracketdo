@@ -200,6 +200,67 @@ function renderBracketArea(state) {
       if (modal?.openMatchModal) modal.openMatchModal(el.dataset.matchId);
     });
   });
+
+  setupBracketDragDrop(container, div);
+}
+
+function setupBracketDragDrop(container, division) {
+  let dragSource = null; // { matchId, slot: 0 | 1 }
+
+  container.querySelectorAll('[data-match-id]').forEach(el => {
+    el.setAttribute('draggable', 'true');
+
+    el.addEventListener('dragstart', e => {
+      const svgRect = container.querySelector('svg').getBoundingClientRect();
+      const relY = e.clientY - svgRect.top;
+      const elY = parseFloat(el.getAttribute('y') ?? '0');
+      const elH = parseFloat(el.getAttribute('height') ?? '44');
+      const slot = relY < elY + elH / 2 ? 0 : 1;
+      dragSource = { matchId: el.dataset.matchId, slot };
+      e.dataTransfer.effectAllowed = 'move';
+    });
+
+    el.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+
+    el.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!dragSource) return;
+      const targetMatchId = el.dataset.matchId;
+      const svgRect = container.querySelector('svg').getBoundingClientRect();
+      const relY = e.clientY - svgRect.top;
+      const elY = parseFloat(el.getAttribute('y') ?? '0');
+      const elH = parseFloat(el.getAttribute('height') ?? '44');
+      const targetSlot = relY < elY + elH / 2 ? 0 : 1;
+
+      // No-op: same slot
+      if (dragSource.matchId === targetMatchId && dragSource.slot === targetSlot) {
+        dragSource = null;
+        return;
+      }
+
+      updateState(s => {
+        const div = s.divisions[s.activeDivision];
+        const allMatches = div.bracket.rounds.flatMap(r => r.matches);
+        const srcMatch = allMatches.find(m => m.id === dragSource.matchId);
+        const tgtMatch = allMatches.find(m => m.id === targetMatchId);
+        if (!srcMatch || !tgtMatch) return;
+
+        const isTeam = srcMatch.type === 'team';
+        const slots = isTeam ? ['team1', 'team2'] : ['player1', 'player2'];
+        const srcKey = slots[dragSource.slot];
+        const tgtKey = slots[targetSlot];
+
+        [srcMatch[srcKey], tgtMatch[tgtKey]] = [tgtMatch[tgtKey], srcMatch[srcKey]];
+      });
+
+      dragSource = null;
+    });
+
+    el.addEventListener('dragend', () => { dragSource = null; });
+  });
 }
 
 function bindAdminEvents() {
