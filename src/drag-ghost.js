@@ -1,4 +1,5 @@
 // src/drag-ghost.js
+// Ghost DOM utility — createGhost(label), moveGhost(x, y), removeGhost()
 
 let _ghost = null;
 
@@ -6,7 +7,7 @@ export function createGhost(label) {
   removeGhost();
   _ghost = document.createElement('div');
   _ghost.id = 'drag-ghost';
-  _ghost.textContent = label;
+  _ghost.textContent = String(label ?? '');
   _ghost.style.cssText = [
     'position:fixed',
     'pointer-events:none',
