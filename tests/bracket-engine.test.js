@@ -1,6 +1,7 @@
 import {
   nextPowerOfTwo,
   generateBracket,
+  generateTeamBracket,
   advanceWinner,
 } from '../src/bracket-engine.js';
 
@@ -50,6 +51,43 @@ describe('generateBracket', () => {
 
   test('참가자 1명 이하 → 에러 throw', () => {
     expect(() => generateBracket([{ id: 'p1', name: '홍길동', club: '' }])).toThrow();
+  });
+});
+
+test('6명 → round 2에 bye가 없음 (BYE 클러스터링 없음)', () => {
+  for (let i = 0; i < 20; i++) {
+    const bracket = generateBracket(
+      Array.from({ length: 6 }, (_, i) => ({ id: `p${i + 1}`, name: `선수${i + 1}`, club: '' }))
+    );
+    const round2Players = bracket.rounds[1]?.matches.flatMap(m => [m.player1, m.player2]) ?? [];
+    expect(round2Players).not.toContain('bye');
+  }
+});
+
+describe('generateTeamBracket', () => {
+  const makeTeams = (n) => Array.from({ length: n }, (_, i) => ({ id: `t${i + 1}`, name: `팀${i + 1}` }));
+
+  test('모든 경기에 team1/team2 필드 존재, player1/player2 없음', () => {
+    const bracket = generateTeamBracket(makeTeams(4));
+    bracket.rounds.forEach(round => {
+      round.matches.forEach(match => {
+        expect(match).not.toHaveProperty('player1');
+        expect(match).not.toHaveProperty('player2');
+        expect(match).toHaveProperty('team1');
+        expect(match).toHaveProperty('team2');
+      });
+    });
+  });
+
+  test('팀 경기 필드 존재 (lineup1, lineup2, bouts, tiebreaker, wins1, wins2)', () => {
+    const bracket = generateTeamBracket(makeTeams(2));
+    const match = bracket.rounds[0].matches[0];
+    expect(match.lineup1).toEqual([]);
+    expect(match.lineup2).toEqual([]);
+    expect(match.bouts).toEqual([]);
+    expect(match.tiebreaker).toBeNull();
+    expect(match.wins1).toBe(0);
+    expect(match.wins2).toBe(0);
   });
 });
 

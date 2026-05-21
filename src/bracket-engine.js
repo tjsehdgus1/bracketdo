@@ -25,17 +25,27 @@ export function generateBracket(participants) {
 
   // 참가자 복사 + 셔플
   const shuffled = [...participants].sort(() => Math.random() - 0.5);
-  // BYE 슬롯을 하단에 추가
-  const slots = [...shuffled, ...Array(byeCount).fill({ id: 'bye', name: 'BYE', club: '' })];
+
+  // BYE 오브젝트
+  const byeObj = { id: 'bye', name: 'BYE', club: '' };
+
+  // BYE가 실제 선수와만 대전하도록 pair 단위로 구성
+  // byeCount < size/2 (항상 성립: size = nextPowerOfTwo(n), n >= size/2 이므로)
+  const pairs = [];
+  let realIdx = 0;
+  let byeAdded = 0;
+  for (let i = 0; i < size / 2; i++) {
+    const p1 = shuffled[realIdx++];
+    const p2 = byeAdded < byeCount ? byeObj : shuffled[realIdx++];
+    if (p2 === byeObj) byeAdded++;
+    pairs.push([p1, p2]);
+  }
 
   // 1라운드 경기 생성
-  const firstRoundMatches = [];
-  for (let i = 0; i < size / 2; i++) {
-    const p1 = slots[i * 2];
-    const p2 = slots[i * 2 + 1];
+  const firstRoundMatches = pairs.map(([p1, p2]) => {
     const isBye1 = p1.id === 'bye';
     const isBye2 = p2.id === 'bye';
-    firstRoundMatches.push({
+    return {
       id: makeMatchId(),
       type: 'individual',
       player1: p1.id,
@@ -44,8 +54,8 @@ export function generateBracket(participants) {
       score2: 0,
       winner: isBye2 ? p1.id : isBye1 ? p2.id : null,
       status: (isBye1 || isBye2) ? 'done' : 'pending',
-    });
-  }
+    };
+  });
 
   const rounds = [{ roundNo: 1, label: roundLabel(totalRounds, 1), matches: firstRoundMatches }];
 
@@ -81,14 +91,10 @@ export function generateTeamBracket(teams) {
   bracket.rounds.forEach(r =>
     r.matches.forEach(m => {
       m.type = 'team';
-      if (m.player1 !== null && m.player1 !== undefined) {
-        m.team1 = m.player1;
-        delete m.player1;
-      }
-      if (m.player2 !== null && m.player2 !== undefined) {
-        m.team2 = m.player2;
-        delete m.player2;
-      }
+      m.team1 = m.player1 ?? null;
+      m.team2 = m.player2 ?? null;
+      delete m.player1;
+      delete m.player2;
       m.lineup1 = [];
       m.lineup2 = [];
       m.bouts = [];
