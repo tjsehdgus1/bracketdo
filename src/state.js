@@ -49,14 +49,6 @@ export function saveState() {
   _state.meta.updatedAt = Date.now();
   const json = JSON.stringify(_state);
   localStorage.setItem('kendo_state', json);
-  // 같은 탭에서도 storage 이벤트 발화 (전광판 탭 동기화용)
-  try {
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'kendo_state',
-      newValue: json,
-      storageArea: localStorage,
-    }));
-  } catch (_) {}
 }
 
 export function updateState(updaterFn) {
