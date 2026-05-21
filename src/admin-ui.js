@@ -211,11 +211,8 @@ function setupBracketDragDrop(container, division) {
     el.setAttribute('draggable', 'true');
 
     el.addEventListener('dragstart', e => {
-      const svgRect = container.querySelector('svg').getBoundingClientRect();
-      const relY = e.clientY - svgRect.top;
-      const elY = parseFloat(el.getAttribute('y') ?? '0');
-      const elH = parseFloat(el.getAttribute('height') ?? '44');
-      const slot = relY < elY + elH / 2 ? 0 : 1;
+      const elRect = el.getBoundingClientRect();
+      const slot = e.clientY < elRect.top + elRect.height / 2 ? 0 : 1;
       dragSource = { matchId: el.dataset.matchId, slot };
       e.dataTransfer.effectAllowed = 'move';
     });
@@ -229,11 +226,8 @@ function setupBracketDragDrop(container, division) {
       e.preventDefault();
       if (!dragSource) return;
       const targetMatchId = el.dataset.matchId;
-      const svgRect = container.querySelector('svg').getBoundingClientRect();
-      const relY = e.clientY - svgRect.top;
-      const elY = parseFloat(el.getAttribute('y') ?? '0');
-      const elH = parseFloat(el.getAttribute('height') ?? '44');
-      const targetSlot = relY < elY + elH / 2 ? 0 : 1;
+      const elRect = el.getBoundingClientRect();
+      const targetSlot = e.clientY < elRect.top + elRect.height / 2 ? 0 : 1;
 
       // No-op: same slot
       if (dragSource.matchId === targetMatchId && dragSource.slot === targetSlot) {
@@ -247,6 +241,7 @@ function setupBracketDragDrop(container, division) {
         const srcMatch = allMatches.find(m => m.id === dragSource.matchId);
         const tgtMatch = allMatches.find(m => m.id === targetMatchId);
         if (!srcMatch || !tgtMatch) return;
+        if (srcMatch.type !== tgtMatch.type) return;
 
         const isTeam = srcMatch.type === 'team';
         const slots = isTeam ? ['team1', 'team2'] : ['player1', 'player2'];
