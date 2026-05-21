@@ -278,7 +278,7 @@ function bindAdminEvents() {
   const root = document;
 
   // 대회명 입력
-  root.addEventListener('input', e => {
+  root.addEventListener('change', e => {
     if (e.target.id === 'title-input') {
       updateState(s => { s.meta.title = e.target.value; });
     }
@@ -303,7 +303,7 @@ function bindAdminEvents() {
   });
 
   // 체급명 변경
-  root.addEventListener('input', e => {
+  root.addEventListener('change', e => {
     if (e.target.id === 'div-name-input') {
       updateState(s => { s.divisions[s.activeDivision].name = e.target.value; });
     }
