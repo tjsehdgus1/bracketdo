@@ -139,7 +139,10 @@ function renderRosterSection(state) {
           <input id="new-player-club" type="text" placeholder="소속" style="flex:1">
         </div>
         <button id="btn-add-player">+ 선수 추가</button>
-        <button id="btn-generate-bracket">대진표 자동 생성</button>
+        <div style="display:flex;gap:4px">
+          <button id="btn-generate-bracket" style="flex:1">자동 생성</button>
+          <button id="btn-empty-bracket" style="flex:1;background:var(--bg-card);border-color:var(--accent-blue);color:var(--accent-blue)">수동 편성</button>
+        </div>
       </div>
     `;
   } else {
@@ -152,7 +155,10 @@ function renderRosterSection(state) {
           <input id="new-team-size" type="number" value="${div.teamSize}" min="5" max="6" style="width:50px">
         </div>
         <button id="btn-add-team">+ 팀 추가</button>
-        <button id="btn-generate-bracket">대진표 자동 생성</button>
+        <div style="display:flex;gap:4px">
+          <button id="btn-generate-bracket" style="flex:1">자동 생성</button>
+          <button id="btn-empty-bracket" style="flex:1;background:var(--bg-card);border-color:var(--accent-blue);color:var(--accent-blue)">수동 편성</button>
+        </div>
       </div>
     `;
   }
@@ -587,5 +593,25 @@ function bindAdminEvents() {
           : generateTeamBracket(d.teams);
       });
     }
+  });
+
+  // 수동 편성 — 빈 대진표 생성
+  root.addEventListener('click', e => {
+    if (e.target.id !== 'btn-empty-bracket') return;
+    const div = getActiveDivision();
+    if (!div) return;
+    const count = div.type === 'individual' ? div.players.length : div.teams.length;
+    if (count < 2) {
+      alert('참가자가 2명 이상이어야 합니다.');
+      return;
+    }
+    if (div.bracket?.rounds?.length) {
+      if (!confirm('기존 대진표를 지우고 수동 편성을 시작할까요?')) return;
+    }
+    updateState(s => {
+      s.divisions[s.activeDivision].bracket = generateEmptyBracket(
+        count, s.divisions[s.activeDivision].type
+      );
+    });
   });
 }
