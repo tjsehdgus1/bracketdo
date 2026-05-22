@@ -101,7 +101,7 @@ export function renderBracketSVG(division, container) {
 
 function renderMatchBox(svg, match, x, y, division) {
   const isBye   = (id) => id === 'bye';
-  const isEmpty = (id) => !id && id !== 'bye';
+  const isEmpty = (id) => !id;
   const p1Id = match.type === 'team' ? match.team1 : match.player1;
   const p2Id = match.type === 'team' ? match.team2 : match.player2;
 

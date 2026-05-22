@@ -288,6 +288,10 @@ function renderBracketArea(state) {
   setupBracketDragDrop(container, div);
 }
 
+// NOTE: renderBracketSVG always sets container.innerHTML = '' before calling this,
+// so overlay elements are destroyed and recreated on each render — the pointerdown
+// listeners below do not accumulate. If renderBracketSVG ever switches to partial
+// updates, add a _bracketDragBound guard (same pattern as _rosterPointerBound).
 function setupBracketDragDrop(container, division) {
   container.querySelectorAll('[data-match-id]').forEach(el => {
     el.style.cursor = 'grab';
@@ -373,6 +377,7 @@ function bindAdminEvents() {
                 const srcMatch = allMatches.find(m => m.id === bracketSrc.matchId);
                 const tgtMatch = allMatches.find(m => m.id === targetMatchId);
                 if (!srcMatch || !tgtMatch) return;
+                if (srcMatch.status === 'done' || tgtMatch.status === 'done') return;
                 if (srcMatch.type !== tgtMatch.type) return;
                 const isTeam = srcMatch.type === 'team';
                 const slots = isTeam ? ['team1', 'team2'] : ['player1', 'player2'];
