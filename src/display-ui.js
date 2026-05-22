@@ -163,7 +163,7 @@ function renderBracketMode(state, container) {
     tabs.style.cssText = 'display:flex;gap:6px;padding:8px 16px;';
     state.divisions.forEach((d, i) => {
       const tab = document.createElement('span');
-      tab.textContent = d.name || `체급 ${i + 1}`;
+      tab.textContent = d.name || `그룹 ${i + 1}`;
       tab.style.cssText = i === state.activeDivision
         ? 'background:#1e3a5f;border:1px solid var(--accent-blue);color:var(--accent-blue);padding:3px 10px;border-radius:4px;font-size:12px;'
         : 'background:var(--bg-card);border:1px solid var(--border);color:var(--text-muted);padding:3px 10px;border-radius:4px;font-size:12px;';

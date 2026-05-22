@@ -102,7 +102,7 @@ function renderDivisionTabs(state) {
   state.divisions.forEach((div, i) => {
     const tab = document.createElement('button');
     tab.className = 'division-tab' + (i === state.activeDivision ? ' active' : '');
-    tab.textContent = div.name || `체급 ${i + 1}`;
+    tab.textContent = div.name || `그룹 ${i + 1}`;
     tab.dataset.index = i;
     container.appendChild(tab);
   });
@@ -119,17 +119,21 @@ function renderDivisionSettings(state) {
   if (!container) return;
   const div = state.divisions[state.activeDivision];
   if (!div) {
-    container.innerHTML = '<p style="color:var(--text-muted);font-size:12px">체급을 추가하세요</p>';
+    container.innerHTML = '<p style="color:var(--text-muted);font-size:12px">그룹을 추가하세요</p>';
     return;
   }
 
   container.innerHTML = `
     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-      <input id="div-name-input" type="text" placeholder="체급명" value="${escHtml(div.name)}" style="flex:1;min-width:80px">
+      <input id="div-name-input" type="text" placeholder="그룹명" value="${escHtml(div.name)}" style="flex:1;min-width:80px">
       <select id="div-type-select" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-primary);padding:5px 8px;border-radius:4px;font-size:13px">
         <option value="individual" ${div.type === 'individual' ? 'selected' : ''}>개인전</option>
         <option value="team" ${div.type === 'team' ? 'selected' : ''}>단체전</option>
       </select>
+      <button id="btn-delete-division" title="이 그룹 삭제"
+        style="background:#7f1d1d;border-color:#ef4444;color:#fca5a5;padding:5px 10px;white-space:nowrap">
+        그룹 삭제
+      </button>
     </div>
   `;
 }
@@ -245,9 +249,8 @@ function renderDisplayControls(state) {
 
   const matchOptions = div ? div.bracket.rounds.flatMap(r =>
     r.matches
-      // 끝난 경기 제외 + 양측 대진이 모두 확정된(미정·BYE 아님) 경기만 노출
+      // 양측 대진이 모두 확정된(미정·BYE 아님) 경기만 노출 (완료된 경기도 포함)
       .filter(m => {
-        if (m.status === 'done') return false;
         const a = m.type === 'team' ? m.team1 : m.player1;
         const b = m.type === 'team' ? m.team2 : m.player2;
         return a && b && a !== 'bye' && b !== 'bye';
@@ -461,7 +464,7 @@ function bindAdminEvents() {
     }
   });
 
-  // 체급 탭 클릭
+  // 그룹 탭 클릭
   root.addEventListener('click', e => {
     const tab = e.target.closest('.division-tab[data-index]');
     if (tab) {
@@ -469,7 +472,7 @@ function bindAdminEvents() {
     }
   });
 
-  // 체급 추가
+  // 그룹 추가
   root.addEventListener('click', e => {
     if (e.target.id === 'btn-add-division') {
       updateState(s => {
@@ -479,7 +482,23 @@ function bindAdminEvents() {
     }
   });
 
-  // 체급명 변경
+  // 그룹 삭제
+  root.addEventListener('click', e => {
+    if (e.target.id === 'btn-delete-division') {
+      const state = getState();
+      if (state.divisions.length <= 1) {
+        alert('그룹이 1개뿐입니다. 삭제할 수 없습니다.');
+        return;
+      }
+      if (!confirm(`"${state.divisions[state.activeDivision].name || '이 그룹'}"을(를) 삭제할까요?\n대진표와 명단이 모두 삭제됩니다.`)) return;
+      updateState(s => {
+        s.divisions.splice(s.activeDivision, 1);
+        s.activeDivision = Math.max(0, s.activeDivision - 1);
+      });
+    }
+  });
+
+  // 그룹명 변경
   root.addEventListener('change', e => {
     if (e.target.id === 'div-name-input') {
       updateState(s => { s.divisions[s.activeDivision].name = e.target.value; });

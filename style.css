@@ -141,7 +141,7 @@ input[type="text"]:focus, input[type="number"]:focus { outline: none; border-col
   color: var(--text-muted);
 }
 
-/* ===== 체급 탭 ===== */
+/* ===== 그룹 탭 ===== */
 #division-tabs {
   display: flex;
   flex-wrap: wrap;
