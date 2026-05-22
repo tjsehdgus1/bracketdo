@@ -609,9 +609,9 @@ function bindAdminEvents() {
       if (!confirm('기존 대진표를 지우고 수동 편성을 시작할까요?')) return;
     }
     updateState(s => {
-      s.divisions[s.activeDivision].bracket = generateEmptyBracket(
-        count, s.divisions[s.activeDivision].type
-      );
+      const d = s.divisions[s.activeDivision];
+      const c = d.type === 'individual' ? d.players.length : d.teams.length;
+      d.bracket = generateEmptyBracket(c, d.type);
     });
   });
 }
