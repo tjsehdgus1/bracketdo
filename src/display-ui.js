@@ -115,10 +115,17 @@ function renderCurrentMatch(state, container) {
       <strong style="color:var(--accent-blue)">${match.wins2 ?? 0}</strong>
     </div>` : '';
 
+  const liveBadge = match.status === 'ongoing'
+    ? '<span class="live-badge">● LIVE</span>'
+    : match.status === 'done'
+    ? '<span class="ended-badge">종료</span>'
+    : '';
+
   container.innerHTML = `
     <div id="current-match-view">
       <div class="current-match-header">
         ${escHtml(state.meta.title)} &nbsp;—&nbsp; ${escHtml(round.label)}
+        ${liveBadge}
       </div>
       ${teamWinsHtml}
       <div class="current-match-players">

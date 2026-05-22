@@ -307,6 +307,56 @@ input[type="text"]:focus, input[type="number"]:focus { outline: none; border-col
   font-size: 18px;
   margin-bottom: 20px;
   letter-spacing: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* 경기 상태 배지 (모달) */
+.status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid;
+}
+.status-pending { background: #1f2937; color: #6b7280; border-color: #374151; }
+.status-ongoing { background: #431407; color: #fb923c; border-color: #ea580c;
+  animation: badge-pulse 1.5s ease-in-out infinite; }
+.status-done    { background: #14532d; color: #86efac; border-color: #22c55e; }
+
+/* 경기 시작 버튼 */
+.btn-match-start {
+  background: #4c1d95;
+  border-color: #7c3aed;
+  color: #ddd6fe;
+  font-weight: bold;
+  padding: 8px 20px;
+}
+.btn-match-start:hover { background: #5b21b6; }
+
+/* 전광판 LIVE / 종료 배지 */
+.live-badge {
+  font-size: 14px;
+  font-weight: bold;
+  color: #fb923c;
+  animation: badge-pulse 1.5s ease-in-out infinite;
+}
+.ended-badge {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #14532d;
+  color: #86efac;
+  border: 1px solid #22c55e;
+}
+
+@keyframes badge-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
 }
 
 .current-match-players {
