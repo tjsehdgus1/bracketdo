@@ -16,6 +16,7 @@ function escHtml(str) {
 let _bracketDragSource = null; // { matchId, slot: 0|1 }
 let _rosterDragSource  = null; // { id, label }
 let _hoveredOverlay    = null; // 현재 강조 중인 SVG overlay 요소
+let _globalPointerListenersRegistered = false;
 
 function getParticipantLabel(id, div) {
   if (!id || id === 'bye') return id === 'bye' ? 'BYE' : '—';
@@ -302,85 +303,90 @@ function bindAdminEvents() {
   const root = document;
 
   // --- 전역 포인터 이벤트 (ghost 이동 + 드롭 처리) ---
-  document.addEventListener('pointermove', e => {
-    if (!_bracketDragSource && !_rosterDragSource) return;
-    moveGhost(e.clientX, e.clientY);
-    // 드롭 가능 오버레이 강조
-    const hits = document.elementsFromPoint(e.clientX, e.clientY);
-    const overlay = hits.find(el => el.dataset?.matchId) ?? null;
-    highlightOverlay(overlay);
-  });
-
-  document.addEventListener('pointerup', e => {
-    const hadBracket = !!_bracketDragSource;
-    const hadRoster  = !!_rosterDragSource;
-
-    if (hadBracket) {
-      const src = _bracketDragSource;
-      _bracketDragSource = null;
-
+  if (!_globalPointerListenersRegistered) {
+    _globalPointerListenersRegistered = true;
+    document.addEventListener('pointermove', e => {
+      if (!_bracketDragSource && !_rosterDragSource) return;
+      moveGhost(e.clientX, e.clientY);
+      // 드롭 가능 오버레이 강조
       const hits = document.elementsFromPoint(e.clientX, e.clientY);
-      const targetEl = hits.find(el => el.dataset?.matchId);
-      if (targetEl) {
-        const targetMatchId = targetEl.dataset.matchId;
-        const rect = targetEl.getBoundingClientRect();
-        const targetSlot = e.clientY < rect.top + rect.height / 2 ? 0 : 1;
-        if (src.matchId !== targetMatchId || src.slot !== targetSlot) {
-          updateState(s => {
-            const div = s.divisions[s.activeDivision];
-            const allMatches = div.bracket.rounds.flatMap(r => r.matches);
-            const srcMatch = allMatches.find(m => m.id === src.matchId);
-            const tgtMatch = allMatches.find(m => m.id === targetMatchId);
-            if (!srcMatch || !tgtMatch) return;
-            if (srcMatch.type !== tgtMatch.type) return;
-            const isTeam = srcMatch.type === 'team';
-            const slots = isTeam ? ['team1', 'team2'] : ['player1', 'player2'];
-            const srcKey = slots[src.slot];
-            const tgtKey = slots[targetSlot];
-            [srcMatch[srcKey], tgtMatch[tgtKey]] = [tgtMatch[tgtKey], srcMatch[srcKey]];
-          });
+      const overlay = hits.find(el => el.dataset?.matchId) ?? null;
+      highlightOverlay(overlay);
+    });
+
+    document.addEventListener('pointerup', e => {
+      const hadBracket = !!_bracketDragSource;
+      const hadRoster  = !!_rosterDragSource;
+      try {
+        if (hadBracket) {
+          const src = _bracketDragSource;
+          _bracketDragSource = null;
+
+          const hits = document.elementsFromPoint(e.clientX, e.clientY);
+          const targetEl = hits.find(el => el.dataset?.matchId);
+          if (targetEl) {
+            const targetMatchId = targetEl.dataset.matchId;
+            const rect = targetEl.getBoundingClientRect();
+            const targetSlot = e.clientY < rect.top + rect.height / 2 ? 0 : 1;
+            if (src.matchId !== targetMatchId || src.slot !== targetSlot) {
+              updateState(s => {
+                const div = s.divisions[s.activeDivision];
+                const allMatches = div.bracket.rounds.flatMap(r => r.matches);
+                const srcMatch = allMatches.find(m => m.id === src.matchId);
+                const tgtMatch = allMatches.find(m => m.id === targetMatchId);
+                if (!srcMatch || !tgtMatch) return;
+                if (srcMatch.type !== tgtMatch.type) return;
+                const isTeam = srcMatch.type === 'team';
+                const slots = isTeam ? ['team1', 'team2'] : ['player1', 'player2'];
+                const srcKey = slots[src.slot];
+                const tgtKey = slots[targetSlot];
+                [srcMatch[srcKey], tgtMatch[tgtKey]] = [tgtMatch[tgtKey], srcMatch[srcKey]];
+              });
+            }
+          }
         }
+
+        if (hadRoster) {
+          // TODO: wired in Task 4 (setupRosterDragSource sets _rosterDragSource)
+          const src = _rosterDragSource;
+          _rosterDragSource = null;
+
+          const hits = document.elementsFromPoint(e.clientX, e.clientY);
+          const targetEl = hits.find(el => el.dataset?.matchId);
+          if (targetEl) {
+            const matchId = targetEl.dataset.matchId;
+            const rect = targetEl.getBoundingClientRect();
+            const slot = e.clientY < rect.top + rect.height / 2 ? 0 : 1;
+            updateState(s => {
+              const div = s.divisions[s.activeDivision];
+              const allMatches = div.bracket.rounds.flatMap(r => r.matches);
+              const match = allMatches.find(m => m.id === matchId);
+              if (!match || match.status === 'done') return;
+              const key = div.type === 'team'
+                ? (slot === 0 ? 'team1' : 'team2')
+                : (slot === 0 ? 'player1' : 'player2');
+              // 슬롯이 비어 있거나 BYE일 때만 배치
+              if (match[key] && match[key] !== 'bye') return;
+              // 이미 다른 슬롯에 배치된 선수면 무시
+              const placed = getPlacedParticipantIds(div);
+              if (placed.has(src.id)) return;
+              match[key] = src.id;
+            });
+          }
+        }
+      } finally {
+        removeGhost();
+        clearOverlayHighlight();
       }
-    }
+    });
 
-    if (hadRoster) {
-      const src = _rosterDragSource;
-      _rosterDragSource = null;
-
-      const hits = document.elementsFromPoint(e.clientX, e.clientY);
-      const targetEl = hits.find(el => el.dataset?.matchId);
-      if (targetEl) {
-        const matchId = targetEl.dataset.matchId;
-        const rect = targetEl.getBoundingClientRect();
-        const slot = e.clientY < rect.top + rect.height / 2 ? 0 : 1;
-        updateState(s => {
-          const div = s.divisions[s.activeDivision];
-          const allMatches = div.bracket.rounds.flatMap(r => r.matches);
-          const match = allMatches.find(m => m.id === matchId);
-          if (!match || match.status === 'done') return;
-          const key = div.type === 'team'
-            ? (slot === 0 ? 'team1' : 'team2')
-            : (slot === 0 ? 'player1' : 'player2');
-          // 슬롯이 비어 있거나 BYE일 때만 배치
-          if (match[key] && match[key] !== 'bye') return;
-          // 이미 다른 슬롯에 배치된 선수면 무시
-          const placed = getPlacedParticipantIds(div);
-          if (placed.has(src.id)) return;
-          match[key] = src.id;
-        });
-      }
-    }
-
-    removeGhost();
-    clearOverlayHighlight();
-  });
-
-  document.addEventListener('pointercancel', () => {
-    _bracketDragSource = null;
-    _rosterDragSource  = null;
-    removeGhost();
-    clearOverlayHighlight();
-  });
+    document.addEventListener('pointercancel', () => {
+      _bracketDragSource = null;
+      _rosterDragSource  = null;
+      removeGhost();
+      clearOverlayHighlight();
+    });
+  }
 
   // 대회명 입력
   root.addEventListener('change', e => {
