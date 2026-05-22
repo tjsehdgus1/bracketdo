@@ -131,6 +131,7 @@ function renderRosterSection(state) {
 
   if (div.type === 'individual') {
     renderPlayerList(div, container);
+    setupRosterDragSource(container);
     actionsContainer.innerHTML = `
       <div style="display:flex;flex-direction:column;gap:6px">
         <div style="display:flex;gap:4px">
@@ -143,6 +144,7 @@ function renderRosterSection(state) {
     `;
   } else {
     renderTeamList(div, container);
+    setupRosterDragSource(container);
     actionsContainer.innerHTML = `
       <div style="display:flex;flex-direction:column;gap:6px">
         <div style="display:flex;gap:4px">
@@ -158,10 +160,16 @@ function renderRosterSection(state) {
 
 function renderPlayerList(div, container) {
   container.innerHTML = '';
+  const placedIds = getPlacedParticipantIds(div);
   div.players.forEach((p, i) => {
     const item = document.createElement('div');
     item.className = 'roster-item';
-    item.dataset.playerId = p.id;
+    item.dataset.playerId    = p.id;
+    item.dataset.rosterId    = p.id;
+    item.dataset.rosterLabel = p.club ? `${p.name} (${p.club})` : p.name;
+    const placed = placedIds.has(p.id);
+    item.style.opacity = placed ? '0.4' : '1';
+    item.style.cursor  = placed ? 'default' : 'grab';
     item.innerHTML = `
       <span style="color:var(--text-muted);font-size:10px;width:16px">${i + 1}</span>
       <span style="flex:1">${escHtml(p.name)}</span>
@@ -178,9 +186,15 @@ function renderPlayerList(div, container) {
 
 function renderTeamList(div, container) {
   container.innerHTML = '';
+  const placedIds = getPlacedParticipantIds(div);
   div.teams.forEach((team, ti) => {
+    const placed = placedIds.has(team.id);
     const item = document.createElement('div');
+    item.dataset.rosterId    = team.id;
+    item.dataset.rosterLabel = team.name;
     item.style.cssText = 'background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:8px;margin-bottom:6px';
+    item.style.opacity = placed ? '0.4' : '1';
+    item.style.cursor  = placed ? 'default' : 'grab';
     item.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
         <strong style="font-size:12px">${escHtml(team.name)}</strong>
@@ -297,6 +311,21 @@ function setupBracketDragDrop(container, division) {
     container.removeEventListener('pointercancel', container._bracketPointerCancel);
     container._bracketPointerCancel = null;
   }
+}
+
+function setupRosterDragSource(rosterContainer) {
+  rosterContainer.addEventListener('pointerdown', e => {
+    const item = e.target.closest('[data-roster-id]');
+    if (!item) return;
+    if (parseFloat(item.style.opacity) < 0.5) return; // 이미 배치됨
+    _rosterDragSource = {
+      id:    item.dataset.rosterId,
+      label: item.dataset.rosterLabel,
+    };
+    createGhost(_rosterDragSource.label);
+    moveGhost(e.clientX, e.clientY);
+    e.preventDefault();
+  });
 }
 
 function bindAdminEvents() {
