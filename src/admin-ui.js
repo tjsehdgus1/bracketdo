@@ -314,6 +314,8 @@ function setupBracketDragDrop(container, division) {
 }
 
 function setupRosterDragSource(rosterContainer) {
+  if (rosterContainer._rosterPointerBound) return;
+  rosterContainer._rosterPointerBound = true;
   rosterContainer.addEventListener('pointerdown', e => {
     const item = e.target.closest('[data-roster-id]');
     if (!item) return;
@@ -344,30 +346,31 @@ function bindAdminEvents() {
     });
 
     document.addEventListener('pointerup', e => {
-      const hadBracket = !!_bracketDragSource;
-      const hadRoster  = !!_rosterDragSource;
-      try {
-        if (hadBracket) {
-          const src = _bracketDragSource;
-          _bracketDragSource = null;
+      // 상태를 먼저 캡처하고 즉시 초기화 (updateState 호출 전에 clear)
+      const bracketSrc = _bracketDragSource;
+      const rosterSrc  = _rosterDragSource;
+      _bracketDragSource = null;
+      _rosterDragSource  = null;
 
+      try {
+        if (bracketSrc) {
           const hits = document.elementsFromPoint(e.clientX, e.clientY);
           const targetEl = hits.find(el => el.dataset?.matchId);
           if (targetEl) {
             const targetMatchId = targetEl.dataset.matchId;
             const rect = targetEl.getBoundingClientRect();
             const targetSlot = e.clientY < rect.top + rect.height / 2 ? 0 : 1;
-            if (src.matchId !== targetMatchId || src.slot !== targetSlot) {
+            if (bracketSrc.matchId !== targetMatchId || bracketSrc.slot !== targetSlot) {
               updateState(s => {
                 const div = s.divisions[s.activeDivision];
                 const allMatches = div.bracket.rounds.flatMap(r => r.matches);
-                const srcMatch = allMatches.find(m => m.id === src.matchId);
+                const srcMatch = allMatches.find(m => m.id === bracketSrc.matchId);
                 const tgtMatch = allMatches.find(m => m.id === targetMatchId);
                 if (!srcMatch || !tgtMatch) return;
                 if (srcMatch.type !== tgtMatch.type) return;
                 const isTeam = srcMatch.type === 'team';
                 const slots = isTeam ? ['team1', 'team2'] : ['player1', 'player2'];
-                const srcKey = slots[src.slot];
+                const srcKey = slots[bracketSrc.slot];
                 const tgtKey = slots[targetSlot];
                 [srcMatch[srcKey], tgtMatch[tgtKey]] = [tgtMatch[tgtKey], srcMatch[srcKey]];
               });
@@ -375,11 +378,7 @@ function bindAdminEvents() {
           }
         }
 
-        if (hadRoster) {
-          // TODO: wired in Task 4 (setupRosterDragSource sets _rosterDragSource)
-          const src = _rosterDragSource;
-          _rosterDragSource = null;
-
+        if (rosterSrc) {
           const hits = document.elementsFromPoint(e.clientX, e.clientY);
           const targetEl = hits.find(el => el.dataset?.matchId);
           if (targetEl) {
@@ -398,8 +397,8 @@ function bindAdminEvents() {
               if (match[key] && match[key] !== 'bye') return;
               // 이미 다른 슬롯에 배치된 선수면 무시
               const placed = getPlacedParticipantIds(div);
-              if (placed.has(src.id)) return;
-              match[key] = src.id;
+              if (placed.has(rosterSrc.id)) return;
+              match[key] = rosterSrc.id;
             });
           }
         }
