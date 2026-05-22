@@ -1,7 +1,12 @@
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// GitHub Pages serves from /<repo-name>/ — set VITE_BASE in CI to match.
+// Local dev and preview use '/' by default.
+const base = process.env.VITE_BASE ?? '/';
+
 export default defineConfig({
+  base,
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',
