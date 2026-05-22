@@ -7,6 +7,21 @@ function escHtml(s) {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+export function clampScore(value, min = 0, max = 10) {
+  const n = parseInt(value, 10) || 0;
+  return Math.max(min, Math.min(max, n));
+}
+
+// 점수 입력용 +/− 스테퍼. 큰 탭 영역으로 키보드 없이 점수 조정.
+// 저장 로직이 값을 읽을 수 있도록 input의 id/class는 그대로 유지한다.
+function scoreStepper({ id, value, cls = '', min = 0, max = 10, size = 'lg' }) {
+  return `<div class="score-stepper score-stepper-${size}">
+    <button type="button" class="step-btn" data-target="${id}" data-delta="-1" aria-label="감소">−</button>
+    <input id="${id}" class="score-display${cls ? ' ' + cls : ''}" value="${value}" data-min="${min}" data-max="${max}" readonly inputmode="numeric">
+    <button type="button" class="step-btn" data-target="${id}" data-delta="1" aria-label="증가">+</button>
+  </div>`;
+}
+
 export function openMatchModal(matchId) {
   const state = getState();
   const div = getActiveDivision();
@@ -44,15 +59,13 @@ function renderIndividualMatchModal(match, div) {
     <h3 style="margin-bottom:16px">경기 결과 입력</h3>
     <div style="display:flex;align-items:center;gap:16px;justify-content:center">
       <div style="text-align:center;flex:1">
-        <div style="font-size:18px;font-weight:bold;margin-bottom:8px">${escHtml(p1Name)}</div>
-        <input type="number" id="score1" value="${match.score1 ?? 0}" min="0" max="10"
-          style="width:60px;text-align:center;font-size:20px;padding:8px">
+        <div style="font-size:18px;font-weight:bold;margin-bottom:12px">${escHtml(p1Name)}</div>
+        ${scoreStepper({ id: 'score1', value: match.score1 ?? 0 })}
       </div>
       <div style="font-size:24px;color:var(--text-muted)">:</div>
       <div style="text-align:center;flex:1">
-        <div style="font-size:18px;font-weight:bold;margin-bottom:8px">${escHtml(p2Name)}</div>
-        <input type="number" id="score2" value="${match.score2 ?? 0}" min="0" max="10"
-          style="width:60px;text-align:center;font-size:20px;padding:8px">
+        <div style="font-size:18px;font-weight:bold;margin-bottom:12px">${escHtml(p2Name)}</div>
+        ${scoreStepper({ id: 'score2', value: match.score2 ?? 0 })}
       </div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
@@ -78,15 +91,13 @@ function renderTeamMatchModal(match, div) {
     const p1 = getPlayerById(t1, lineup1[i]);
     const p2 = getPlayerById(t2, lineup2[i]);
     return `
-      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
         <span style="width:32px;font-size:11px;color:var(--text-muted)">${pos}</span>
-        <span style="flex:1;font-size:13px">${escHtml(p1?.name ?? '-')}</span>
-        <input type="number" class="bout-score1" data-bout="${i}" value="${bout.score1}" min="0" max="10"
-          style="width:48px;text-align:center;padding:4px">
+        <span style="flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(p1?.name ?? '-')}">${escHtml(p1?.name ?? '-')}</span>
+        ${scoreStepper({ id: `bout-${i}-s1`, value: bout.score1, cls: 'bout-score1', size: 'sm' })}
         <span style="color:var(--text-muted)">:</span>
-        <input type="number" class="bout-score2" data-bout="${i}" value="${bout.score2}" min="0" max="10"
-          style="width:48px;text-align:center;padding:4px">
-        <span style="flex:1;font-size:13px;text-align:right">${escHtml(p2?.name ?? '-')}</span>
+        ${scoreStepper({ id: `bout-${i}-s2`, value: bout.score2, cls: 'bout-score2', size: 'sm' })}
+        <span style="flex:1;min-width:0;font-size:13px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(p2?.name ?? '-')}">${escHtml(p2?.name ?? '-')}</span>
       </div>
     `;
   }).join('');
@@ -139,12 +150,32 @@ function renderTeamMatchModal(match, div) {
   `;
 }
 
-function bindModalEvents(matchId, matchType, div) {
-  document.getElementById('btn-modal-cancel')?.addEventListener('click', closeMatchModal);
+// 지속 요소(#modal-overlay/#modal-box)에 한 번만 위임 리스너를 단다.
+// 매 모달 오픈마다 달면 누적되고, { once:true }는 모달 내부 첫 클릭에 제거되어
+// 점수 스테퍼 클릭 후 바깥 클릭 닫기가 동작하지 않게 된다.
+let _modalDelegatesBound = false;
+function ensureModalDelegates() {
+  if (_modalDelegatesBound) return;
+  _modalDelegatesBound = true;
 
   document.getElementById('modal-overlay')?.addEventListener('click', e => {
     if (e.target.id === 'modal-overlay') closeMatchModal();
-  }, { once: true });
+  });
+
+  document.getElementById('modal-box')?.addEventListener('click', e => {
+    const btn = e.target.closest('.step-btn');
+    if (!btn) return;
+    const input = document.getElementById(btn.dataset.target);
+    if (!input) return;
+    const next = (parseInt(input.value, 10) || 0) + Number(btn.dataset.delta);
+    input.value = String(clampScore(next, Number(input.dataset.min), Number(input.dataset.max)));
+  });
+}
+
+function bindModalEvents(matchId, matchType, div) {
+  ensureModalDelegates();
+
+  document.getElementById('btn-modal-cancel')?.addEventListener('click', closeMatchModal);
 
   document.getElementById('btn-modal-confirm')?.addEventListener('click', () => {
     if (matchType === 'individual') saveIndividualResult(matchId);

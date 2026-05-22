@@ -12,11 +12,24 @@ function escHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+// 드래그 시작에서 제외할 인터랙티브 요소(입력·버튼 등) 판별.
+// 이런 요소 위에서 pointerdown 시 드래그를 시작하면 preventDefault가
+// 포커스/클릭을 막아 단체전 선수명 입력 등이 동작하지 않는다.
+export function isFormControl(el) {
+  return !!el?.closest?.('input, textarea, select, button, [contenteditable="true"]');
+}
+
 // --- 드래그 공유 상태 ---
 let _bracketDragSource = null; // { matchId, slot: 0|1 }
 let _rosterDragSource  = null; // { id, label }
 let _hoveredOverlay    = null; // 현재 강조 중인 SVG overlay 요소
 let _globalPointerListenersRegistered = false;
+
+// --- 대진표 확대/축소 ---
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 3;
+const ZOOM_STEP = 0.25;
+let _bracketZoom = 1;
 
 function getParticipantLabel(id, div) {
   if (!id || id === 'bye') return id === 'bye' ? 'BYE' : '—';
@@ -177,9 +190,9 @@ function renderPlayerList(div, container) {
     item.style.opacity = placed ? '0.4' : '1';
     item.style.cursor  = placed ? 'default' : 'grab';
     item.innerHTML = `
-      <span style="color:var(--text-muted);font-size:10px;width:16px">${i + 1}</span>
-      <span style="flex:1">${escHtml(p.name)}</span>
-      <span style="color:var(--text-muted);font-size:11px">${escHtml(p.club)}</span>
+      <span style="color:var(--text-muted);font-size:11px;width:16px">${i + 1}</span>
+      <span style="flex:1" title="${escHtml(p.name)}">${escHtml(p.name)}</span>
+      <span style="color:var(--text-muted);font-size:12px;max-width:90px" title="${escHtml(p.club)}">${escHtml(p.club)}</span>
       <div class="move-btns">
         <button data-action="up" data-idx="${i}">↑</button>
         <button data-action="down" data-idx="${i}">↓</button>
@@ -198,19 +211,19 @@ function renderTeamList(div, container) {
     const item = document.createElement('div');
     item.dataset.rosterId    = team.id;
     item.dataset.rosterLabel = team.name;
-    item.style.cssText = 'background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:8px;margin-bottom:6px';
+    item.style.cssText = 'background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:8px;margin-bottom:6px;overflow:hidden';
     item.style.opacity = placed ? '0.4' : '1';
     item.style.cursor  = placed ? 'default' : 'grab';
     item.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <strong style="font-size:12px">${escHtml(team.name)}</strong>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px">
+        <strong style="font-size:12px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(team.name)}">${escHtml(team.name)}</strong>
         <button class="delete-btn" data-action="delete-team" data-idx="${ti}">✕</button>
       </div>
       <div style="display:flex;flex-direction:column;gap:3px">
         ${team.roster.map((p, pi) => `
           <div style="display:flex;gap:4px;align-items:center;font-size:11px;color:var(--text-muted)">
-            <span style="width:30px">${div.positions[pi] ?? `포지션${pi+1}`}</span>
-            <span style="flex:1;color:var(--text-primary)">${escHtml(p.name)}</span>
+            <span style="width:30px;flex-shrink:0">${div.positions[pi] ?? `포지션${pi+1}`}</span>
+            <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-primary)" title="${escHtml(p.name)}">${escHtml(p.name)}</span>
           </div>
         `).join('')}
         ${team.roster.length < div.teamSize ? `
@@ -271,11 +284,16 @@ function renderBracketArea(state) {
   const container = document.getElementById('bracket-container');
   if (!container) return;
   const div = getActiveDivision();
+  const toolbar = document.getElementById('bracket-toolbar');
   if (!div || !div.bracket.rounds.length) {
+    if (toolbar) toolbar.classList.add('hidden');
     container.innerHTML = '<p style="color:var(--text-muted);margin:40px;text-align:center">대진표를 생성하세요</p>';
     return;
   }
-  renderBracketSVG(div, container);
+  if (toolbar) toolbar.classList.remove('hidden');
+  const zoomLabel = document.getElementById('zoom-level');
+  if (zoomLabel) zoomLabel.textContent = Math.round(_bracketZoom * 100) + '%';
+  renderBracketSVG(div, container, _bracketZoom);
 
   // SVG match click events
   container.querySelectorAll('[data-match-id]').forEach(el => {
@@ -327,6 +345,8 @@ function setupRosterDragSource(rosterContainer) {
   if (rosterContainer._rosterPointerBound) return;
   rosterContainer._rosterPointerBound = true;
   rosterContainer.addEventListener('pointerdown', e => {
+    // 입력 필드·버튼 위에서는 드래그를 시작하지 않는다 (포커스/클릭 보존)
+    if (isFormControl(e.target)) return;
     const item = e.target.closest('[data-roster-id]');
     if (!item) return;
     if (parseFloat(item.style.opacity) < 0.5) return; // 이미 배치됨
@@ -548,6 +568,17 @@ function bindAdminEvents() {
       });
       if (input) input.value = '';
     }
+  });
+
+  // 대진표 확대/축소
+  root.addEventListener('click', e => {
+    const btn = e.target.closest('#bracket-toolbar [data-zoom]');
+    if (!btn) return;
+    const action = btn.dataset.zoom;
+    if (action === 'in')        _bracketZoom = Math.min(ZOOM_MAX, _bracketZoom + ZOOM_STEP);
+    else if (action === 'out')  _bracketZoom = Math.max(ZOOM_MIN, _bracketZoom - ZOOM_STEP);
+    else if (action === 'reset') _bracketZoom = 1;
+    renderBracketArea(getState());
   });
 
   // 전광판 열기

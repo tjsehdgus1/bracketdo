@@ -11,9 +11,9 @@
   --border-blue: #3b6ca8;
   --accent-blue: #7eb8f7;
   --accent-green:#22c55e;
-  --text-primary:#e2e8f0;
-  --text-muted:  #6b7280;
-  --text-dim:    #374151;
+  --text-primary:#f1f5f9;
+  --text-muted:  #9ca3af;
+  --text-dim:    #6b7280;
   --danger:      #ef4444;
 }
 
@@ -84,6 +84,7 @@ input[type="text"]:focus, input[type="number"]:focus { outline: none; border-col
   background: var(--bg-panel);
   border-right: 1px solid var(--border);
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -91,15 +92,54 @@ input[type="text"]:focus, input[type="number"]:focus { outline: none; border-col
 }
 
 #sidebar section { display: flex; flex-direction: column; gap: 8px; }
-#sidebar h3 { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+#sidebar h3 { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+
+/* flex 행 안의 입력 필드가 고유 최소너비(min-width:auto) 때문에
+   가로로 넘치지 않도록 — 사이드바 폭에 맞춰 줄어들게 한다 */
+#sidebar input,
+#sidebar select { min-width: 0; }
 
 #bracket-area {
   flex: 1;
   overflow: auto;
   padding: 20px;
+  position: relative;
 }
 
 #bracket-container { min-width: 600px; }
+
+/* 대진표 확대/축소 툴바 */
+#bracket-toolbar {
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 6px 8px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+#bracket-toolbar button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#bracket-toolbar #zoom-level {
+  min-width: 48px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+}
 
 /* ===== 체급 탭 ===== */
 #division-tabs {
@@ -124,19 +164,31 @@ input[type="text"]:focus, input[type="number"]:focus { outline: none; border-col
 }
 .division-tab-add {
   border-style: dashed;
-  color: var(--text-dim);
+  border-color: var(--border-blue);
+  color: var(--accent-blue);
+  font-weight: bold;
 }
+.division-tab-add:hover { background: var(--bg-active); }
 
 /* ===== 로스터 목록 ===== */
 .roster-item {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px;
+  padding: 5px 8px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 13px;
+  overflow: hidden;
+}
+
+/* 긴 선수명·소속이 가로 스크롤을 만들지 않도록 말줄임 처리 */
+.roster-item > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .roster-item .move-btns { display: flex; flex-direction: column; gap: 1px; margin-left: auto; }
@@ -164,6 +216,41 @@ input[type="text"]:focus, input[type="number"]:focus { outline: none; border-col
   max-height: 85vh;
   overflow-y: auto;
 }
+
+/* ===== 점수 스테퍼 (모달) ===== */
+.score-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.score-stepper .step-btn {
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  line-height: 1;
+  border-color: var(--border-blue);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+.score-stepper .score-display {
+  text-align: center;
+  font-weight: bold;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+/* 개인전: 큰 탭 영역 */
+.score-stepper-lg .step-btn { width: 44px; height: 44px; font-size: 24px; }
+.score-stepper-lg .score-display { width: 64px; height: 44px; font-size: 28px; }
+
+/* 단체전 대결: 컴팩트 */
+.score-stepper-sm .step-btn { width: 30px; height: 30px; font-size: 18px; }
+.score-stepper-sm .score-display { width: 40px; height: 30px; font-size: 18px; }
 
 /* ===== 전광판 화면 ===== */
 [data-page="display"] {
