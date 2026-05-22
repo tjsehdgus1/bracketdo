@@ -85,7 +85,8 @@ function getMatchById(state, matchId) {
 }
 
 function getParticipantInfo(id, div) {
-  if (!id || id === 'bye') return { name: 'BYE', club: '' };
+  if (id === 'bye') return { name: 'BYE', club: '' };
+  if (!id) return { name: '미정', club: '' };
   if (div.type === 'individual') {
     const p = div.players.find(p => p.id === id);
     return { name: p?.name ?? '?', club: p?.club ?? '' };
@@ -97,7 +98,7 @@ function getParticipantInfo(id, div) {
 function renderCurrentMatch(state, container) {
   const found = getMatchById(state, state.display.currentMatchId);
   if (!found) {
-    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#374151;font-size:24px">경기를 지정해 주세요</div>';
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:24px">경기를 지정해 주세요</div>';
     return;
   }
   const { match, div, round } = found;

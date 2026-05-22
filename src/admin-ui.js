@@ -245,12 +245,19 @@ function renderDisplayControls(state) {
 
   const matchOptions = div ? div.bracket.rounds.flatMap(r =>
     r.matches
-      .filter(m => m.status !== 'done')
+      // 끝난 경기 제외 + 양측 대진이 모두 확정된(미정·BYE 아님) 경기만 노출
+      .filter(m => {
+        if (m.status === 'done') return false;
+        const a = m.type === 'team' ? m.team1 : m.player1;
+        const b = m.type === 'team' ? m.team2 : m.player2;
+        return a && b && a !== 'bye' && b !== 'bye';
+      })
       .map(m => {
         const p1Id = m.type === 'team' ? m.team1 : m.player1;
         const p2Id = m.type === 'team' ? m.team2 : m.player2;
         const getName = (id) => {
-          if (!id || id === 'bye') return 'BYE';
+          if (id === 'bye') return 'BYE';
+          if (!id) return '미정';
           if (div.type === 'individual') return div.players.find(p => p.id === id)?.name ?? id;
           return div.teams.find(t => t.id === id)?.name ?? id;
         };
@@ -424,11 +431,11 @@ function bindAdminEvents() {
               const key = div.type === 'team'
                 ? (slot === 0 ? 'team1' : 'team2')
                 : (slot === 0 ? 'player1' : 'player2');
-              // 슬롯이 비어 있거나 BYE일 때만 배치
-              if (match[key] && match[key] !== 'bye') return;
               // 이미 다른 슬롯에 배치된 선수면 무시
               const placed = getPlacedParticipantIds(div);
               if (placed.has(rosterSrc.id)) return;
+              // 빈 슬롯·BYE는 물론, 이미 배치된 슬롯에 떨어뜨리면 교체한다.
+              // 밀려난 선수는 어느 경기에도 없으므로 자동으로 미배치 명단으로 돌아간다.
               match[key] = rosterSrc.id;
             });
           }

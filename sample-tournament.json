@@ -1,0 +1,201 @@
+{
+  "meta": {
+    "title": "제1회 샘플 검도대회 (테스트용)",
+    "updatedAt": 1764800000000
+  },
+  "activeDivision": 0,
+  "divisions": [
+    {
+      "name": "남자 개인전",
+      "type": "individual",
+      "teamSize": 5,
+      "positions": ["선봉", "차봉", "중견", "부장", "대장"],
+      "players": [
+        { "id": "p1", "name": "홍길동", "club": "서울특별시검도회", "seed": 1 },
+        { "id": "p2", "name": "김철수", "club": "부산광역시검도회 해운대구지부 좌동체육관", "seed": 2 },
+        { "id": "p3", "name": "이영희", "club": "대구검도관", "seed": 3 },
+        { "id": "p4", "name": "박민수", "club": "인천", "seed": 4 }
+      ],
+      "teams": [],
+      "bracket": {
+        "rounds": [
+          {
+            "roundNo": 1,
+            "label": "준결승",
+            "matches": [
+              {
+                "id": "m1",
+                "type": "individual",
+                "player1": "p1",
+                "player2": "p2",
+                "score1": 2,
+                "score2": 1,
+                "winner": "p1",
+                "status": "done"
+              },
+              {
+                "id": "m2",
+                "type": "individual",
+                "player1": "p3",
+                "player2": "p4",
+                "score1": 1,
+                "score2": 1,
+                "winner": null,
+                "status": "ongoing"
+              }
+            ]
+          },
+          {
+            "roundNo": 2,
+            "label": "결승",
+            "matches": [
+              {
+                "id": "m3",
+                "type": "individual",
+                "player1": "p1",
+                "player2": null,
+                "score1": 0,
+                "score2": 0,
+                "winner": null,
+                "status": "pending"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "남자 단체전",
+      "type": "team",
+      "teamSize": 5,
+      "positions": ["선봉", "차봉", "중견", "부장", "대장"],
+      "players": [],
+      "teams": [
+        {
+          "id": "t1",
+          "name": "서울특별시 대표팀",
+          "roster": [
+            { "id": "tp1", "name": "정민수" },
+            { "id": "tp2", "name": "강호동" },
+            { "id": "tp3", "name": "유재석" },
+            { "id": "tp4", "name": "신동엽" },
+            { "id": "tp5", "name": "김종국" }
+          ],
+          "lastLineup": ["tp1", "tp2", "tp3", "tp4", "tp5"]
+        },
+        {
+          "id": "t2",
+          "name": "부산광역시 대표팀",
+          "roster": [
+            { "id": "tp6", "name": "이수근" },
+            { "id": "tp7", "name": "하동훈" },
+            { "id": "tp8", "name": "지석진" },
+            { "id": "tp9", "name": "송지효" },
+            { "id": "tp10", "name": "양세찬" }
+          ],
+          "lastLineup": []
+        },
+        {
+          "id": "t3",
+          "name": "대구광역시 대표팀",
+          "roster": [
+            { "id": "tp11", "name": "김구라" },
+            { "id": "tp12", "name": "조세호" },
+            { "id": "tp13", "name": "유세윤" },
+            { "id": "tp14", "name": "뮤지" },
+            { "id": "tp15", "name": "데프콘" }
+          ],
+          "lastLineup": []
+        },
+        {
+          "id": "t4",
+          "name": "인천광역시 대표팀",
+          "roster": [
+            { "id": "tp16", "name": "박나래" },
+            { "id": "tp17", "name": "안영미" },
+            { "id": "tp18", "name": "장도연" },
+            { "id": "tp19", "name": "김숙" },
+            { "id": "tp20", "name": "홍진경" }
+          ],
+          "lastLineup": []
+        }
+      ],
+      "bracket": {
+        "rounds": [
+          {
+            "roundNo": 1,
+            "label": "준결승",
+            "matches": [
+              {
+                "id": "tm1",
+                "type": "team",
+                "team1": "t1",
+                "team2": "t2",
+                "score1": 3,
+                "score2": 2,
+                "wins1": 3,
+                "wins2": 2,
+                "winner": "t1",
+                "status": "done",
+                "tiebreaker": null,
+                "lineup1": ["tp1", "tp2", "tp3", "tp4", "tp5"],
+                "lineup2": ["tp6", "tp7", "tp8", "tp9", "tp10"],
+                "bouts": [
+                  { "score1": 2, "score2": 0, "winner": "team1", "status": "done", "position": "선봉" },
+                  { "score1": 0, "score2": 1, "winner": "team2", "status": "done", "position": "차봉" },
+                  { "score1": 1, "score2": 0, "winner": "team1", "status": "done", "position": "중견" },
+                  { "score1": 0, "score2": 2, "winner": "team2", "status": "done", "position": "부장" },
+                  { "score1": 1, "score2": 0, "winner": "team1", "status": "done", "position": "대장" }
+                ]
+              },
+              {
+                "id": "tm2",
+                "type": "team",
+                "team1": "t3",
+                "team2": "t4",
+                "score1": 0,
+                "score2": 0,
+                "wins1": 0,
+                "wins2": 0,
+                "winner": null,
+                "status": "pending",
+                "tiebreaker": null,
+                "lineup1": [],
+                "lineup2": [],
+                "bouts": []
+              }
+            ]
+          },
+          {
+            "roundNo": 2,
+            "label": "결승",
+            "matches": [
+              {
+                "id": "tm3",
+                "type": "team",
+                "team1": "t1",
+                "team2": null,
+                "score1": 0,
+                "score2": 0,
+                "wins1": 0,
+                "wins2": 0,
+                "winner": null,
+                "status": "pending",
+                "tiebreaker": null,
+                "lineup1": [],
+                "lineup2": [],
+                "bouts": []
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "display": {
+    "mode": "bracket",
+    "currentMatchId": "m2",
+    "autoSlide": false,
+    "slideInterval": 10000
+  }
+}
