@@ -49,6 +49,13 @@ describe('performSignup', () => {
       .rejects.toMatchObject({ status: 400 });
   });
 
+  test('player: dojoId가 선택한 지역과 다르면 400', async () => {
+    const { deps } = makeDeps({
+      findDojoById: async () => ({ id: 'dojo-1', name: '강남검도관', sido_code: '41', sigungu_code: '41110' }),
+    });
+    await expect(performSignup(playerInput, deps)).rejects.toMatchObject({ status: 400 });
+  });
+
   test('club_manager: 검도관+관장 생성 경로 호출', async () => {
     const { deps, calls } = makeDeps();
     const res = await performSignup(managerInput, deps);

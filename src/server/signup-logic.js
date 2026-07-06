@@ -64,6 +64,9 @@ export async function performSignup(input = {}, deps) {
     if (input.dojoId) {
       const dojo = await db.findDojoById(input.dojoId);
       if (!dojo) throw new SignupError(400, '선택한 검도관을 찾을 수 없습니다.');
+      if (dojo.sido_code !== input.sidoCode || dojo.sigungu_code !== input.sigunguCode) {
+        throw new SignupError(400, '선택한 검도관이 해당 지역에 없습니다.');
+      }
       dojoId = dojo.id;
     }
     user = await db.createUser({ ...baseUser, dojo_id: dojoId });
