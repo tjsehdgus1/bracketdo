@@ -54,26 +54,28 @@ export const db = {
     return rows[0];
   },
 
-  // 단일 문장 CTE로 원자적 처리: 유저 생성 → 검도관 생성(owner=유저) → 유저.dojo_id 갱신
+  // 단일 문장 CTE로 원자적 처리. UPDATE로 CTE 삽입 행을 참조할 수 없으므로(스냅샷 공유)
+  // id를 선생성해 양쪽 INSERT에 직접 넣는다. FK 검사는 문장 끝에 수행되므로 상호 참조 가능.
   async createClubManagerWithDojo(u, d) {
     const rows = await sql`
-      WITH new_user AS (
-        INSERT INTO users
-          (email, password_hash, name, phone, sido_code, sido_name, sigungu_code, sigungu_name, role)
-        VALUES
-          (${u.email}, ${u.password_hash}, ${u.name}, ${u.phone}, ${u.sido_code}, ${u.sido_name},
-           ${u.sigungu_code}, ${u.sigungu_name}, ${u.role})
-        RETURNING id
+      WITH ids AS (
+        SELECT gen_random_uuid() AS uid, gen_random_uuid() AS did
       ),
       new_dojo AS (
-        INSERT INTO dojos (name, sido_code, sido_name, sigungu_code, sigungu_name, owner_id)
-        SELECT ${d.name}, ${d.sido_code}, ${d.sido_name}, ${d.sigungu_code}, ${d.sigungu_name}, id
-        FROM new_user
+        INSERT INTO dojos (id, name, sido_code, sido_name, sigungu_code, sigungu_name, owner_id)
+        SELECT did, ${d.name}, ${d.sido_code}, ${d.sido_name}, ${d.sigungu_code}, ${d.sigungu_name}, uid
+        FROM ids
         RETURNING id
+      ),
+      ins_user AS (
+        INSERT INTO users
+          (id, email, password_hash, name, phone, sido_code, sido_name, sigungu_code, sigungu_name, dojo_id, role)
+        SELECT uid, ${u.email}, ${u.password_hash}, ${u.name}, ${u.phone}, ${u.sido_code}, ${u.sido_name},
+               ${u.sigungu_code}, ${u.sigungu_name}, did, ${u.role}
+        FROM ids
+        RETURNING *
       )
-      UPDATE users SET dojo_id = (SELECT id FROM new_dojo)
-      WHERE id = (SELECT id FROM new_user)
-      RETURNING *`;
+      SELECT * FROM ins_user`;
     const user = rows[0];
     return { user, dojo: { id: user.dojo_id, ...d } };
   },
