@@ -56,8 +56,9 @@ if (page === 'signup') {
     if (!sidoSel.value || !sigunguSel.value) return;
     const res = await fetch(`/api/dojos?sido=${sidoSel.value}&sigungu=${sigunguSel.value}`);
     const { dojos = [] } = await res.json().catch(() => ({ dojos: [] }));
-    dojoSel.innerHTML = '<option value="">소속 미정 (나중에 선택)</option>' +
-      dojos.map(d => `<option value="${d.id}">${d.name}</option>`).join('');
+    dojoSel.innerHTML = '';
+    dojoSel.append(new Option('소속 미정 (나중에 선택)', ''));
+    for (const d of dojos) dojoSel.append(new Option(d.name, d.id));
   }
 
   function applyRole() {

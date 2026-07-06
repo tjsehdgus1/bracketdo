@@ -27,11 +27,13 @@ export function renderNotReadyLanding(user) {
     <main class="auth-wrap">
       <h1 class="auth-title">🏆 KendoBracket</h1>
       <p style="text-align:center">
-        <strong>${user.name}</strong>님 (${roleLabel(user.role)})으로 로그인했습니다.<br>
+        <strong id="landing-name"></strong>님 (<span id="landing-role"></span>)으로 로그인했습니다.<br>
         이 역할의 화면은 다음 단계에서 열립니다.
       </p>
       <p class="auth-link"><button id="logout-btn">로그아웃</button></p>
     </main>`;
+  document.getElementById('landing-name').textContent = user.name;
+  document.getElementById('landing-role').textContent = roleLabel(user.role);
   document.getElementById('logout-btn').addEventListener('click', logout);
 }
 
