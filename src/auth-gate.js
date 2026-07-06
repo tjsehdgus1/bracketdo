@@ -2,18 +2,19 @@
 // 반환: { user } (통과) | null (리다이렉트 처리됨)
 
 export async function requireAuth() {
-  let res;
+  let user;
   try {
-    res = await fetch('/api/auth/me');
+    const res = await fetch('/api/auth/me');
+    if (!res.ok) throw new Error(`auth check failed: ${res.status}`);
+    ({ user } = await res.json());
   } catch {
     window.location.href = 'login.html';
     return null;
   }
-  if (res.status === 401) {
+  if (!user) {
     window.location.href = 'login.html';
     return null;
   }
-  const { user } = await res.json();
   return { user };
 }
 

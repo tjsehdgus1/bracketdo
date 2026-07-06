@@ -1,14 +1,10 @@
 # KendoBracket
 
-검도 대회 대진표 운영 시스템 — 브라우저 전용, 서버 불필요, localStorage 기반 실시간 동기화.
+검도 대회 대진표 운영 시스템 — Vite 프론트 + Vercel 서버리스 + Neon(Postgres) 인증, localStorage 기반 전광판 동기화.
 
 ## 실행 방법
 
-1. 로컬 HTTP 서버 실행 (ES 모듈 때문에 필요):
-   ```
-   python -m http.server 3000
-   ```
-   또는 VS Code의 Live Server 익스텐션 사용.
+1. 로컬 서버 실행: 관리자 화면은 인증 API가 필요하므로 `npx vercel dev`로 실행 (전광판/정적 미리보기는 `npm run dev`도 가능).
 
 2. 브라우저에서 `http://localhost:3000` 열기 (관리자 화면)
 
