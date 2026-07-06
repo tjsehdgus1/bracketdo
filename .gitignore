@@ -3,3 +3,5 @@ node_modules/
 .superpowers/
 *.json.bak
 dist/
+.env
+.vercel/
