@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KendoBracket — 회원가입</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="signup">
+  <main class="auth-wrap">
+    <h1 class="auth-title">🏆 KendoBracket 회원가입</h1>
+    <form id="signup-form" class="auth-form" autocomplete="on">
+      <label>역할
+        <select name="role" id="role-select" required>
+          <option value="player">선수</option>
+          <option value="club_manager">단체대표(지도자)</option>
+        </select>
+      </label>
+      <label>성명 <input type="text" name="name" required></label>
+      <label>연락처 <input type="tel" name="phone" placeholder="010-0000-0000"></label>
+      <label>이메일 <input type="email" name="email" required></label>
+      <label>비밀번호 <input type="password" name="password" minlength="8" required></label>
+
+      <fieldset class="auth-fieldset">
+        <legend>소속 지역·검도관</legend>
+        <label>시/도 <select name="sido" id="sido-select" required></select></label>
+        <label>시/군/구 <select name="sigungu" id="sigungu-select" required></select></label>
+
+        <!-- 선수: 기존 검도관 선택 -->
+        <label id="dojo-select-wrap">소속 검도관
+          <select name="dojoId" id="dojo-select">
+            <option value="">소속 미정 (나중에 선택)</option>
+          </select>
+        </label>
+
+        <!-- 단체대표: 새 검도관명 입력 -->
+        <label id="dojo-name-wrap" hidden>검도관명
+          <input type="text" name="dojoName" id="dojo-name" placeholder="예: 강남검도관">
+        </label>
+      </fieldset>
+
+      <button type="submit">가입하기</button>
+      <p id="signup-error" class="auth-error" role="alert"></p>
+    </form>
+    <p class="auth-link">이미 계정이 있으신가요? <a href="login.html">로그인</a></p>
+  </main>
+  <script type="module" src="src/auth-pages.js"></script>
+</body>
+</html>
