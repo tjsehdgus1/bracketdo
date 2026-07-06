@@ -121,7 +121,7 @@ CREATE TABLE users (
 | POST | `/api/auth/signup` | 가입. `role`은 `club_manager`/`player`만 허용(`admin`/`super_admin` 거부 403). club_manager면 검도관 생성+관장 지정, player면 기존 검도관 연결(또는 미정). 성공 시 로그인 쿠키 설정. |
 | POST | `/api/auth/login` | 이메일+비번 검증 → JWT를 httpOnly 쿠키로 설정. |
 | POST | `/api/auth/logout` | 쿠키 삭제. |
-| GET  | `/api/auth/me` | 쿠키 JWT 검증 → `{ id, email, name, role, dojo }` 반환. 미인증 401. |
+| GET  | `/api/auth/me` | 쿠키 JWT 검증 → `{ user }` 반환 — user는 password_hash를 제외한 전체 사용자 행(snake_case: id, email, name, phone, sido_code/…, dojo_id, role, created_at) + `dojo_name`(LEFT JOIN). 미인증 401. |
 | GET  | `/api/dojos?sido=&sigungu=` | 행정구역으로 필터링한 검도관 목록(가입폼 드롭다운용). 인증 불필요. |
 
 - 비밀번호 해싱: `bcryptjs` (순수 JS — 서버리스에서 네이티브 빌드 이슈 없음).
