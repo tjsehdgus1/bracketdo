@@ -16,6 +16,7 @@ export function safeUser(user) {
 }
 
 export async function performSignup(input = {}, deps) {
+  input = { ...input, email: typeof input.email === 'string' ? input.email.trim().toLowerCase() : input.email };
   const { db, hashPassword, signToken } = deps;
 
   if (input.role === 'admin' || input.role === 'super_admin') {

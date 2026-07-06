@@ -78,6 +78,14 @@ describe('performSignup', () => {
       .rejects.toMatchObject({ status: 400 });
   });
 
+  test('이메일은 트림+소문자로 정규화되어 저장/중복확인된다', async () => {
+    const seen = [];
+    const { deps, calls } = makeDeps({ emailExists: async (e) => { seen.push(e); return false; } });
+    await performSignup({ ...playerInput, email: '  P@X.com ' }, deps);
+    expect(seen).toEqual(['p@x.com']);
+    expect(calls.createUser.email).toBe('p@x.com');
+  });
+
   test('safeUser는 password_hash 제거', () => {
     expect(safeUser({ id: 1, password_hash: 'x', name: 'n' })).toEqual({ id: 1, name: 'n' });
   });
