@@ -2,7 +2,9 @@
 import { neon } from '@neondatabase/serverless';
 import { hashPassword } from '../src/server/auth.js';
 
-const [email, password, name] = process.argv.slice(2);
+const [rawEmail, password, name] = process.argv.slice(2);
+// 가입/로그인 로직과 동일한 정규화 — 불일치 시 최고관리자 로그인 불가
+const email = rawEmail?.trim().toLowerCase();
 
 if (!email || !password || !name) {
   console.error('사용법: node --env-file=.env scripts/create-superadmin.mjs <email> <password> "<name>"');
