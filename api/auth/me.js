@@ -3,6 +3,7 @@ import { verifyToken, parseCookies } from '../../src/server/auth.js';
 import { safeUser } from '../../src/server/signup-logic.js';
 
 export default async function handler(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method Not Allowed' });
   try {
     const { kendo_token: token } = parseCookies(req.headers.cookie);
     if (!token) return res.status(401).json({ error: '로그인이 필요합니다.' });
