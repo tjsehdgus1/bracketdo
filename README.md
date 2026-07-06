@@ -33,6 +33,33 @@ npm install
 npm test
 ```
 
+## 백엔드 / 계정 (1단계)
+
+Vercel 서버리스 함수 + Neon(Postgres) 기반 인증이 추가되었습니다.
+
+### 환경변수
+`.env.example`을 복사해 `.env`를 만들고 채웁니다.
+- `DATABASE_URL` — Neon 연결 문자열
+- `JWT_SECRET` — 긴 랜덤 문자열 (`openssl rand -base64 48`)
+
+Vercel 배포 시 두 변수를 프로젝트 Environment Variables에 등록합니다.
+
+### DB 마이그레이션
+```bash
+psql "$DATABASE_URL" -f db/migrations/001_init.sql
+```
+
+### 최고관리자 생성
+```bash
+node --env-file=.env scripts/create-superadmin.mjs <email> <password> "<name>"
+```
+
+### 로컬 실행 (API 포함)
+Vite dev는 `/api`를 서빙하지 않으므로 API까지 확인하려면:
+```bash
+npx vercel dev
+```
+
 ## 파일 구조
 
 ```
