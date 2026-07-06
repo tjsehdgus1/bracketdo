@@ -54,7 +54,10 @@ export function parseCookies(cookieHeader = '') {
     if (!trimmed) continue;
     const idx = trimmed.indexOf('=');
     if (idx === -1) continue;
-    out[trimmed.slice(0, idx)] = decodeURIComponent(trimmed.slice(idx + 1));
+    const key = trimmed.slice(0, idx);
+    const raw = trimmed.slice(idx + 1);
+    try { out[key] = decodeURIComponent(raw); }
+    catch { out[key] = raw; }
   }
   return out;
 }

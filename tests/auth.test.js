@@ -39,5 +39,7 @@ describe('auth helpers', () => {
   test('parseCookies는 헤더 문자열을 객체로', () => {
     expect(parseCookies('kendo_token=abc; other=1')).toEqual({ kendo_token: 'abc', other: '1' });
     expect(parseCookies('')).toEqual({});
+    // 잘못된 인코딩도 던지지 않고 원문 유지
+    expect(parseCookies('bad=%zz; kendo_token=ok')).toEqual({ bad: '%zz', kendo_token: 'ok' });
   });
 });
