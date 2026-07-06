@@ -10,6 +10,10 @@ if (!email || !password || !name) {
   console.error('사용법: node --env-file=.env scripts/create-superadmin.mjs <email> <password> "<name>"');
   process.exit(1);
 }
+if (password.length < 8) {
+  console.error('비밀번호는 8자 이상이어야 합니다.');
+  process.exit(1);
+}
 if (!process.env.DATABASE_URL) {
   console.error('DATABASE_URL이 설정되지 않았습니다.');
   process.exit(1);
