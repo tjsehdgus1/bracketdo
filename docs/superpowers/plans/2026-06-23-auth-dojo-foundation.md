@@ -988,6 +988,12 @@ git commit -m "feat: add super_admin seed script"
 
 Vercel Node 함수 시그니처(`(req, res)`)를 사용한다. `req.body`는 Vercel이 JSON을 자동 파싱한다.
 
+> **리뷰 반영(Task 5 품질 검토):** signup의 emailExists→createUser, findDojoByNameRegion→createClubManagerWithDojo는 check-then-act라 동시 요청 시 UNIQUE 제약 위반이 raw DB 에러로 올라온다. `api/auth/signup.js`의 catch에서 **Postgres unique_violation(code `23505`)을 409로 매핑**할 것 (500으로 흘리지 말 것):
+> ```js
+> if (e?.code === '23505') return res.status(409).json({ error: '이미 등록된 정보입니다.' });
+> ```
+> (SignupError 분기 다음, 일반 500 분기 전에 추가)
+
 **Files:**
 - Create: `api/auth/signup.js`, `api/auth/login.js`, `api/auth/logout.js`, `api/auth/me.js`
 - Create: `api/dojos.js`
