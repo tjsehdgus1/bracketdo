@@ -3,15 +3,38 @@ import { loadState, setRenderCallback, getState, updateState } from './src/state
 import { initAdmin, renderAll } from './src/admin-ui.js';
 import { initDisplay } from './src/display-ui.js';
 import { openMatchModal, closeMatchModal } from './src/match-modal.js';
+import { requireAuth, logout, renderNotReadyLanding } from './src/auth-gate.js';
 
 const page = document.body.dataset.page;
 
 if (page === 'admin') {
-  setRenderCallback(renderAll);
-  loadState();
-  initAdmin();
-  window._matchModal = { openMatchModal, closeMatchModal };
+  const auth = await requireAuth();
+  if (auth) {
+    const { user } = auth;
+    if (user.role === 'admin' || user.role === 'super_admin') {
+      // 헤더에 사용자/로그아웃 표시
+      const bar = document.getElementById('user-bar');
+      if (bar) {
+        bar.textContent = `${user.name} · `;
+        const btn = document.createElement('button');
+        btn.textContent = '로그아웃';
+        btn.addEventListener('click', logout);
+        bar.appendChild(btn);
+      }
+      setRenderCallback(renderAll);
+      loadState();
+      initAdmin();
+      window._matchModal = { openMatchModal, closeMatchModal };
+      initBackupButtons();
+    } else {
+      renderNotReadyLanding(user); // club_manager / player
+    }
+  }
+} else if (page === 'display') {
+  initDisplay();
+}
 
+function initBackupButtons() {
   // JSON 내보내기
   document.getElementById('btn-export')?.addEventListener('click', () => {
     const state = getState();
@@ -51,7 +74,4 @@ if (page === 'admin') {
     };
     reader.readAsText(file);
   });
-
-} else if (page === 'display') {
-  initDisplay();
 }
