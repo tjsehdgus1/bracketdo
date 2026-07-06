@@ -467,3 +467,14 @@ input[type="text"]:focus, input[type="number"]:focus { outline: none; border-col
   #sidebar, #header, #display-controls { display: none; }
   #bracket-area, #bracket-display-view { width: 100%; overflow: visible; }
 }
+
+/* --- 인증 화면 --- */
+.auth-wrap { max-width: 420px; margin: 8vh auto; padding: 0 20px; }
+.auth-title { text-align: center; margin-bottom: 24px; }
+.auth-form { display: flex; flex-direction: column; gap: 14px; }
+.auth-form label { display: flex; flex-direction: column; gap: 6px; font-weight: 600; }
+.auth-form input, .auth-form select { padding: 10px; font-size: 15px; }
+.auth-form button { padding: 12px; font-size: 16px; cursor: pointer; }
+.auth-error { color: #dc2626; min-height: 1.2em; margin: 4px 0 0; }
+.auth-link { text-align: center; margin-top: 16px; }
+.auth-fieldset { border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; }

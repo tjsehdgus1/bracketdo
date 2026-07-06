@@ -47,6 +47,8 @@ export default defineConfig({
       input: {
         main: 'index.html',
         display: 'display.html',
+        login: 'login.html',
+        signup: 'signup.html',
       },
     },
   },
